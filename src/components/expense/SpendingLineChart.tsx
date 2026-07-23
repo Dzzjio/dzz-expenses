@@ -58,24 +58,24 @@ export function SpendingLineChart({ expenses, from, to }: Props) {
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
           <XAxis
             dataKey="date"
             tickFormatter={formatX}
-            tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: 11, fill: "#6b7280" }}
             tickLine={false}
-            axisLine={{ stroke: "hsl(var(--border))" }}
+            axisLine={{ stroke: "#e5e7eb" }}
             minTickGap={24}
           />
           <YAxis
             tickFormatter={(v) => `$${v}`}
-            tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: 11, fill: "#6b7280" }}
             tickLine={false}
-            axisLine={{ stroke: "hsl(var(--border))" }}
+            axisLine={{ stroke: "#e5e7eb" }}
             width={48}
           />
           <Tooltip
-            cursor={{ stroke: "hsl(var(--foreground))", strokeDasharray: "4 4", strokeOpacity: 0.5 }}
+            cursor={{ stroke: "#1f2937", strokeDasharray: "4 4", strokeOpacity: 0.5 }}
             formatter={(v: number) => [formatCurrency(v), "Spent"]}
             labelFormatter={(l: string) =>
               new Date(l + "T00:00:00").toLocaleDateString(undefined, {
@@ -87,22 +87,22 @@ export function SpendingLineChart({ expenses, from, to }: Props) {
             }
             contentStyle={{
               borderRadius: 8,
-              border: "1px solid hsl(var(--border))",
-              background: "hsl(var(--popover))",
+              border: "1px solid #e5e7eb",
+              background: "#ffffff",
               fontSize: 12,
             }}
           />
           <Line
             type="monotone"
             dataKey="amount"
-            stroke="hsl(var(--primary))"
+            stroke="#6366f1"
             strokeWidth={2}
             dot={false}
             activeDot={{
               r: 4,
-              stroke: "hsl(var(--primary))",
+              stroke: "#6366f1",
               strokeWidth: 2,
-              fill: "hsl(var(--background))",
+              fill: "#ffffff",
             }}
           />
         </LineChart>
