@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -10,14 +10,14 @@ import {
   TrendingUp,
   Receipt,
   Tag,
-  LogOut,
   Settings,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import { exportExpensesToExcel } from "@/lib/export-excel";
 
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
 import {
   fetchCategories,
   fetchExpenses,
@@ -76,19 +76,23 @@ export const Route = createFileRoute("/")({
 
 type RangePreset = "month" | "year" | "all" | "custom";
 
-function startOfMonthISO() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+function iso(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
 }
-function startOfYearISO() {
-  return new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
+function startOfMonthISO(d = new Date()) {
+  return iso(new Date(d.getFullYear(), d.getMonth(), 1));
+}
+function endOfMonthISO(d = new Date()) {
+  return iso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return iso(new Date());
 }
 
-function formatDate(iso: string) {
-  const d = new Date(iso + "T00:00:00");
+function formatDate(isoStr: string) {
+  const d = new Date(isoStr + "T00:00:00");
   return d.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -96,37 +100,46 @@ function formatDate(iso: string) {
   });
 }
 
+function monthLabel(d: Date) {
+  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+function rangeLabel(
+  preset: RangePreset,
+  from: string,
+  to: string,
+  monthCursor: Date,
+  yearCursor: number,
+) {
+  if (preset === "month") return monthLabel(monthCursor);
+  if (preset === "year") return String(yearCursor);
+  if (preset === "all") return "All time";
+  return `${formatDate(from)} – ${formatDate(to)}`;
+}
+
+function fileLabel(preset: RangePreset, monthCursor: Date, yearCursor: number) {
+  if (preset === "month")
+    return `${monthCursor.getFullYear()}-${String(monthCursor.getMonth() + 1).padStart(2, "0")}`;
+  if (preset === "year") return String(yearCursor);
+  return todayISO();
+}
+
+
 function DashboardPage() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-
-  useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/auth", replace: true });
-  }, [authLoading, user, navigate]);
 
   const { data: mainCategories = [] } = useQuery({
-    queryKey: ["main_categories", user?.id],
+    queryKey: ["main_categories"],
     queryFn: fetchMainCategories,
-    enabled: !!user,
   });
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories", user?.id],
+    queryKey: ["categories"],
     queryFn: fetchCategories,
-    enabled: !!user,
   });
   const { data: expenses = [], isLoading } = useQuery({
-    queryKey: ["expenses", user?.id],
+    queryKey: ["expenses"],
     queryFn: fetchExpenses,
-    enabled: !!user,
   });
-
-  async function handleLogout() {
-    await qc.cancelQueries();
-    qc.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
 
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
@@ -137,15 +150,30 @@ function DashboardPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [mainFilter, setMainFilter] = useState<string>("all");
   const [rangePreset, setRangePreset] = useState<RangePreset>("month");
+  const [monthCursor, setMonthCursor] = useState(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
+  const [yearCursor, setYearCursor] = useState(() => new Date().getFullYear());
   const [customFrom, setCustomFrom] = useState(startOfMonthISO());
   const [customTo, setCustomTo] = useState(todayISO());
 
   const { from, to } = useMemo(() => {
-    if (rangePreset === "month") return { from: startOfMonthISO(), to: todayISO() };
-    if (rangePreset === "year") return { from: startOfYearISO(), to: todayISO() };
+    if (rangePreset === "month")
+      return { from: startOfMonthISO(monthCursor), to: endOfMonthISO(monthCursor) };
+    if (rangePreset === "year")
+      return { from: `${yearCursor}-01-01`, to: `${yearCursor}-12-31` };
     if (rangePreset === "custom") return { from: customFrom, to: customTo };
     return { from: "0000-01-01", to: "9999-12-31" };
-  }, [rangePreset, customFrom, customTo]);
+  }, [rangePreset, monthCursor, yearCursor, customFrom, customTo]);
+
+  function shiftRange(dir: -1 | 1) {
+    if (rangePreset === "month") {
+      setMonthCursor((c) => new Date(c.getFullYear(), c.getMonth() + dir, 1));
+    } else if (rangePreset === "year") {
+      setYearCursor((y) => y + dir);
+    }
+  }
 
   const filtered = useMemo(() => {
     return expenses.filter((e) => {
@@ -157,23 +185,13 @@ function DashboardPage() {
   }, [expenses, categoryFilter, mainFilter, from, to]);
 
   const stats = useMemo(() => {
-    const now = new Date();
-    const monthStart = startOfMonthISO();
-    const yearStart = startOfYearISO();
-    let month = 0;
-    let year = 0;
-    for (const e of expenses) {
-      const amt = Number(e.amount);
-      if (e.expense_date >= yearStart) year += amt;
-      if (e.expense_date >= monthStart) month += amt;
-    }
-    return { month, year, count: expenses.length, now };
-  }, [expenses]);
+    const total = filtered.reduce((s, e) => s + Number(e.amount), 0);
+    const count = filtered.length;
+    const avg = count > 0 ? total / count : 0;
+    return { total, count, avg };
+  }, [filtered]);
 
-  const monthExpenses = useMemo(
-    () => expenses.filter((e) => e.expense_date >= startOfMonthISO()),
-    [expenses],
-  );
+  const label = rangeLabel(rangePreset, from, to, monthCursor, yearCursor);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -190,41 +208,13 @@ function DashboardPage() {
 
   function handleExport() {
     if (filtered.length === 0) {
-      toast.error("Nothing to export");
+      toast.error(`No expenses in ${label}`);
       return;
     }
-    const rows = filtered.map((e) => ({
-      Date: e.expense_date,
-      Description: e.description ?? "",
-      "Main Category": e.category?.main_category?.name ?? "",
-      Category: e.category?.name ?? "",
-      Amount: Number(e.amount),
-    }));
-    const total = rows.reduce((s, r) => s + r.Amount, 0);
-    rows.push({
-      Date: "",
-      Description: "",
-      "Main Category": "",
-      Category: "Total",
-      Amount: total,
-    });
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [{ wch: 12 }, { wch: 32 }, { wch: 18 }, { wch: 18 }, { wch: 12 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Expenses");
-    const name = `expenses_export_${todayISO()}.xlsx`;
-    XLSX.writeFile(wb, name);
+    exportExpensesToExcel(filtered, fileLabel(rangePreset, monthCursor, yearCursor));
     toast.success("Export ready");
   }
 
-  if (authLoading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -240,7 +230,7 @@ function DashboardPage() {
                 Spend
               </h1>
               <p className="text-xs text-muted-foreground sm:text-sm">
-                {user.email}
+                Personal expense tracker
               </p>
             </div>
           </div>
@@ -268,62 +258,82 @@ function DashboardPage() {
             >
               <Plus className="mr-1.5 h-4 w-4" /> Add expense
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout} title="Log out">
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </header>
 
-        {/* Summary cards */}
-        <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <SummaryCard
-            icon={<TrendingUp className="h-4 w-4" />}
-            label="This month"
-            value={formatCurrency(stats.month)}
-            hint={stats.now.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
-          />
-          <SummaryCard
-            icon={<Wallet className="h-4 w-4" />}
-            label="This year"
-            value={formatCurrency(stats.year)}
-            hint={String(stats.now.getFullYear())}
-          />
-          <SummaryCard
-            icon={<Receipt className="h-4 w-4" />}
-            label="Total expenses"
-            value={String(stats.count)}
-            hint="All time"
-          />
-        </section>
-
-        {/* Charts */}
-        <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Global timeline filter */}
+        <section className="mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">This month by category</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CategoryChart expenses={monthExpenses} />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Spending over time</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SpendingLineChart expenses={expenses} from={from} to={to} />
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Filters + table */}
-        <section className="mt-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Expenses</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-5">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Date range</Label>
+                  <Select
+                    value={rangePreset}
+                    onValueChange={(v) => setRangePreset(v as RangePreset)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="month">Monthly</SelectItem>
+                      <SelectItem value="year">Yearly</SelectItem>
+                      <SelectItem value="all">All time</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(rangePreset === "month" || rangePreset === "year") && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">
+                      {rangePreset === "month" ? "Month" : "Year"}
+                    </Label>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        aria-label="Previous period"
+                        onClick={() => shiftRange(-1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <div className="flex h-9 flex-1 items-center justify-center rounded-md border px-2 text-sm font-medium tabular-nums">
+                        {label}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        aria-label="Next period"
+                        onClick={() => shiftRange(1)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {rangePreset === "custom" && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">From</Label>
+                      <Input
+                        type="date"
+                        value={customFrom}
+                        onChange={(e) => setCustomFrom(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">To</Label>
+                      <Input
+                        type="date"
+                        value={customTo}
+                        onChange={(e) => setCustomTo(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="space-y-1.5">
                   <Label className="text-xs">Main category</Label>
                   <Select value={mainFilter} onValueChange={setMainFilter}>
@@ -370,51 +380,66 @@ function DashboardPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Date range</Label>
-                  <Select
-                    value={rangePreset}
-                    onValueChange={(v) => setRangePreset(v as RangePreset)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="month">This month</SelectItem>
-                      <SelectItem value="year">This year</SelectItem>
-                      <SelectItem value="all">All time</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {rangePreset === "custom" && (
-                  <>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">From</Label>
-                      <Input
-                        type="date"
-                        value={customFrom}
-                        onChange={(e) => setCustomFrom(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">To</Label>
-                      <Input
-                        type="date"
-                        value={customTo}
-                        onChange={(e) => setCustomTo(e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
               </div>
+            </CardContent>
+          </Card>
+        </section>
 
-              <div className="flex items-center justify-between border-t pt-3 text-sm">
+        {/* Summary cards (reflect current filter) */}
+        <section className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <SummaryCard
+            icon={<TrendingUp className="h-4 w-4" />}
+            label="Total spent"
+            value={formatCurrency(stats.total)}
+            hint={label}
+          />
+          <SummaryCard
+            icon={<Receipt className="h-4 w-4" />}
+            label="Expenses"
+            value={String(stats.count)}
+            hint={label}
+          />
+          <SummaryCard
+            icon={<Wallet className="h-4 w-4" />}
+            label="Average / expense"
+            value={formatCurrency(stats.avg)}
+            hint={label}
+          />
+        </section>
+
+        {/* Charts */}
+        <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">By category · {label}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CategoryChart expenses={filtered} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Spending over time · {label}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SpendingLineChart expenses={filtered} from={from} to={to} />
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Table */}
+        <section className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Expenses · {label}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
                   {filtered.length} {filtered.length === 1 ? "expense" : "expenses"}
                 </span>
                 <span className="font-medium tabular-nums text-foreground">
-                  {formatCurrency(filtered.reduce((s, e) => s + Number(e.amount), 0))}
+                  {formatCurrency(stats.total)}
                 </span>
               </div>
 
