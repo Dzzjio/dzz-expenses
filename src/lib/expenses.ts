@@ -38,7 +38,7 @@ export async function fetchExpenses(): Promise<ExpenseWithCategory[]> {
 export function formatCurrency(n: number) {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
     maximumFractionDigits: 2,
   }).format(n);
 }

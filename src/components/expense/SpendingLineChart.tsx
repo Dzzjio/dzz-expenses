@@ -68,7 +68,7 @@ export function SpendingLineChart({ expenses, from, to }: Props) {
             minTickGap={24}
           />
           <YAxis
-            tickFormatter={(v) => `$${v}`}
+            tickFormatter={(v) => `€${v}`}
             tick={{ fontSize: 11, fill: "#6b7280" }}
             tickLine={false}
             axisLine={{ stroke: "#e5e7eb" }}
