@@ -53,6 +53,8 @@ import { CategoryDialog } from "@/components/expense/CategoryDialog";
 import { MainCategoryDialog } from "@/components/expense/MainCategoryDialog";
 import { ExpenseDialog } from "@/components/expense/ExpenseDialog";
 
+import logo from '../../public/coin.png'
+
 export const Route = createFileRoute("/")({
   component: DashboardPage,
   ssr: false,
@@ -222,12 +224,12 @@ function DashboardPage() {
         {/* Header */}
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Wallet className="h-5 w-5" />
-            </div>
+            <img src={logo} alt="Logo" className="h-24 w-24 coin-spin" />
+            {/* <img src={logo} alt="Logo" className="h-24 w-24" /> */}
+
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                Spend
+                dzz-expenses
               </h1>
               <p className="text-xs text-muted-foreground sm:text-sm">
                 Personal expense tracker

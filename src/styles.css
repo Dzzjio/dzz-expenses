@@ -5,7 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
+ * ARCADE DESIGN SYSTEM  ▸ "SPEND: THE GAME"
+ *
+ * Visual language only — a retro arcade-cabinet skin over the existing app.
+ *   · Pixel display type (Press Start 2P) for HUD/labels/buttons
+ *   · Techy body type (Chakra Petch) for readable content
+ *   · Neon-on-near-black palette, hard offset "sticker" shadows, CRT scanlines
  *
  * The @theme inline block maps CSS custom properties to Tailwind utility
  * classes (e.g. --color-primary -> bg-primary, text-primary).
@@ -19,6 +24,10 @@
  */
 
 @theme inline {
+  --font-pixel: "Press Start 2P", "Courier New", monospace;
+  --font-sans: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Chakra Petch", ui-monospace, monospace;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -59,77 +68,166 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Arcade neon accents */
+  --color-neon-lime: var(--neon-lime);
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-magenta: var(--neon-magenta);
+  --color-neon-yellow: var(--neon-yellow);
+  --color-neon-violet: var(--neon-violet);
+  --color-neon-orange: var(--neon-orange);
+  --color-arcade-ink: var(--arcade-ink);
+  --color-arcade-edge: var(--arcade-edge);
+
+  --animate-blink: blink 1.1s steps(2, start) infinite;
+  --animate-arcade-pulse: arcade-pulse 2.4s ease-in-out infinite;
+  --animate-arcade-float: arcade-float 3.6s ease-in-out infinite;
+  --animate-marquee-chase: marquee-chase 1.2s linear infinite;
+  --animate-coin-bob: coin-bob 1.8s ease-in-out infinite;
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.99 0.005 100);
-  --foreground: oklch(0.18 0.02 250);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 250);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 250);
-  --primary: oklch(0.55 0.15 155);
-  --primary-foreground: oklch(0.99 0.005 100);
-  --secondary: oklch(0.96 0.01 180);
-  --secondary-foreground: oklch(0.25 0.03 250);
-  --muted: oklch(0.96 0.008 240);
-  --muted-foreground: oklch(0.5 0.02 250);
-  --accent: oklch(0.94 0.03 155);
-  --accent-foreground: oklch(0.25 0.05 155);
-  --destructive: oklch(0.58 0.22 27);
-  --destructive-foreground: oklch(0.99 0.005 100);
-  --border: oklch(0.92 0.01 250);
-  --input: oklch(0.92 0.01 250);
-  --ring: oklch(0.55 0.15 155);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --radius: 4px;
+
+  --background: oklch(0.14 0.045 288);
+  --foreground: oklch(0.96 0.015 270);
+  --card: oklch(0.21 0.055 288);
+  --card-foreground: oklch(0.96 0.015 270);
+  --popover: oklch(0.18 0.05 288);
+  --popover-foreground: oklch(0.96 0.015 270);
+  --primary: oklch(0.85 0.21 141);
+  --primary-foreground: oklch(0.16 0.06 150);
+  --secondary: oklch(0.31 0.09 292);
+  --secondary-foreground: oklch(0.95 0.02 270);
+  --muted: oklch(0.26 0.06 289);
+  --muted-foreground: oklch(0.74 0.05 285);
+  --accent: oklch(0.85 0.16 200);
+  --accent-foreground: oklch(0.16 0.06 240);
+  --destructive: oklch(0.66 0.25 18);
+  --destructive-foreground: oklch(0.98 0.01 270);
+  --border: oklch(0.42 0.11 291);
+  --input: oklch(0.34 0.09 291);
+  --ring: oklch(0.85 0.16 200);
+
+  --chart-1: oklch(0.85 0.21 141);
+  --chart-2: oklch(0.85 0.16 200);
+  --chart-3: oklch(0.72 0.28 340);
+  --chart-4: oklch(0.9 0.19 100);
+  --chart-5: oklch(0.7 0.22 300);
+
+  --sidebar: oklch(0.18 0.05 288);
+  --sidebar-foreground: oklch(0.96 0.015 270);
+  --sidebar-primary: oklch(0.85 0.21 141);
+  --sidebar-primary-foreground: oklch(0.16 0.06 150);
+  --sidebar-accent: oklch(0.26 0.06 289);
+  --sidebar-accent-foreground: oklch(0.96 0.015 270);
+  --sidebar-border: oklch(0.42 0.11 291);
+  --sidebar-ring: oklch(0.85 0.16 200);
+
+  /* Neon accent ramp used by the arcade chrome */
+  --neon-lime: oklch(0.85 0.21 141);
+  --neon-cyan: oklch(0.85 0.16 200);
+  --neon-magenta: oklch(0.72 0.28 340);
+  --neon-yellow: oklch(0.9 0.19 100);
+  --neon-violet: oklch(0.7 0.22 300);
+  --neon-orange: oklch(0.78 0.19 55);
+
+  /* Hard-shadow "sticker" edges */
+  --arcade-ink: oklch(0.08 0.03 288);
+  --arcade-edge: oklch(0.29 0.09 291);
+  --arcade-grid: oklch(0.65 0.1 292 / 0.07);
 }
 
+/*
+ * The cabinet is always lit the same way: the dark scope reuses the arcade
+ * palette so the skin stays consistent whichever scheme is active.
+ */
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --background: oklch(0.14 0.045 288);
+  --foreground: oklch(0.96 0.015 270);
+  --card: oklch(0.21 0.055 288);
+  --card-foreground: oklch(0.96 0.015 270);
+  --popover: oklch(0.18 0.05 288);
+  --popover-foreground: oklch(0.96 0.015 270);
+  --primary: oklch(0.85 0.21 141);
+  --primary-foreground: oklch(0.16 0.06 150);
+  --secondary: oklch(0.31 0.09 292);
+  --secondary-foreground: oklch(0.95 0.02 270);
+  --muted: oklch(0.26 0.06 289);
+  --muted-foreground: oklch(0.74 0.05 285);
+  --accent: oklch(0.85 0.16 200);
+  --accent-foreground: oklch(0.16 0.06 240);
+  --destructive: oklch(0.66 0.25 18);
+  --destructive-foreground: oklch(0.98 0.01 270);
+  --border: oklch(0.42 0.11 291);
+  --input: oklch(0.34 0.09 291);
+  --ring: oklch(0.85 0.16 200);
+  --chart-1: oklch(0.85 0.21 141);
+  --chart-2: oklch(0.85 0.16 200);
+  --chart-3: oklch(0.72 0.28 340);
+  --chart-4: oklch(0.9 0.19 100);
+  --chart-5: oklch(0.7 0.22 300);
+  --sidebar: oklch(0.18 0.05 288);
+  --sidebar-foreground: oklch(0.96 0.015 270);
+  --sidebar-primary: oklch(0.85 0.21 141);
+  --sidebar-primary-foreground: oklch(0.16 0.06 150);
+  --sidebar-accent: oklch(0.26 0.06 289);
+  --sidebar-accent-foreground: oklch(0.96 0.015 270);
+  --sidebar-border: oklch(0.42 0.11 291);
+  --sidebar-ring: oklch(0.85 0.16 200);
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes arcade-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px var(--arcade-ink),
+      0 0 12px 0 var(--pixel-glow, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--arcade-ink),
+      0 0 26px 2px var(--pixel-glow, transparent);
+  }
+}
+
+@keyframes arcade-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes marquee-chase {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 24px 0;
+  }
+}
+
+@keyframes coin-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(2deg);
+  }
 }
 
 @layer base {
@@ -137,8 +235,260 @@
     border-color: var(--color-border);
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
+    font-family: var(--font-sans);
     background-color: var(--color-background);
     color: var(--color-foreground);
+    /* Cabinet backdrop: neon spill + a faint pixel grid */
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.45 0.2 300 / 0.35), transparent 70%),
+      radial-gradient(ellipse 70% 50% at 100% 110%, oklch(0.5 0.16 200 / 0.22), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 0% 100%, oklch(0.5 0.2 340 / 0.16), transparent 70%),
+      linear-gradient(var(--arcade-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--arcade-grid) 1px, transparent 1px);
+    background-size:
+      auto,
+      auto,
+      auto,
+      32px 32px,
+      32px 32px;
+    background-attachment: fixed;
   }
+
+  /* CRT scanlines over the whole cabinet screen */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      oklch(0 0 0 / 0.22) 0px,
+      oklch(0 0 0 / 0.22) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    opacity: 0.55;
+    mix-blend-mode: multiply;
+  }
+
+  ::selection {
+    background: var(--neon-magenta);
+    color: oklch(0.14 0.045 288);
+  }
+
+  /* Chunky arcade scrollbars */
+  * {
+    scrollbar-color: var(--neon-violet) oklch(0.18 0.05 288);
+    scrollbar-width: thin;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: oklch(0.18 0.05 288);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--neon-violet);
+    border: 2px solid oklch(0.18 0.05 288);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-magenta);
+  }
+
+  /* Recharts text picks up the pixel HUD font */
+  .recharts-text {
+    font-family: var(--font-pixel);
+  }
+
+  /* Date/color pickers shouldn't render as bright light-mode widgets */
+  input[type="date"],
+  input[type="color"] {
+    color-scheme: dark;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) hue-rotate(180deg);
+    cursor: pointer;
+    opacity: 0.8;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  input[type="color"]::-webkit-color-swatch {
+    border: 2px solid var(--arcade-ink);
+  }
+}
+
+@layer utilities {
+  /* Pressable arcade button: hard offset edge that collapses on press */
+  .pixel-press {
+    box-shadow:
+      3px 3px 0 0 var(--pixel-edge, var(--arcade-edge)),
+      0 0 0 0 transparent;
+    transition:
+      transform 80ms steps(2, end),
+      box-shadow 140ms ease,
+      background-color 140ms ease,
+      color 140ms ease,
+      border-color 140ms ease;
+  }
+  .pixel-press:hover:not(:disabled):not([data-disabled]) {
+    box-shadow:
+      3px 3px 0 0 var(--pixel-edge, var(--arcade-edge)),
+      0 0 16px 0 var(--pixel-glow, transparent);
+  }
+  .pixel-press:active:not(:disabled):not([data-disabled]) {
+    transform: translate(3px, 3px);
+    box-shadow:
+      0 0 0 0 transparent,
+      0 0 12px 0 var(--pixel-glow, transparent);
+  }
+
+  /* Cabinet panel: pixel frame + sticker shadow + LED strip on top */
+  .arcade-panel {
+    position: relative;
+    border: 2px solid var(--border);
+    background-image: linear-gradient(
+      180deg,
+      oklch(0.24 0.06 289 / 0.92),
+      oklch(0.17 0.05 289 / 0.94)
+    );
+    box-shadow:
+      inset 0 1px 0 oklch(0.8 0.08 290 / 0.18),
+      inset 0 0 32px oklch(0.6 0.16 300 / 0.07),
+      5px 5px 0 0 oklch(0.1 0.035 289);
+  }
+  .arcade-panel::before {
+    content: "";
+    position: absolute;
+    inset: -2px -2px auto -2px;
+    height: 3px;
+    background-image: linear-gradient(
+      90deg,
+      var(--neon-cyan),
+      var(--neon-violet),
+      var(--neon-magenta),
+      var(--neon-lime),
+      var(--neon-cyan)
+    );
+    background-size: 200% 100%;
+    opacity: 0.85;
+  }
+
+  /* Field wells read as recessed cabinet slots */
+  .arcade-field {
+    background-color: oklch(0.12 0.04 289 / 0.85);
+    box-shadow:
+      inset 2px 2px 0 0 oklch(0.08 0.03 289),
+      inset -1px -1px 0 0 oklch(0.4 0.1 292 / 0.5);
+  }
+  .arcade-field:focus,
+  .arcade-field:focus-visible,
+  .arcade-field[data-state="open"] {
+    border-color: var(--neon-cyan);
+    box-shadow:
+      inset 2px 2px 0 0 oklch(0.08 0.03 289),
+      0 0 14px 0 oklch(0.85 0.16 200 / 0.45);
+  }
+
+  /* Neon type */
+  .neon-text {
+    text-shadow:
+      0 0 6px color-mix(in oklab, currentColor 60%, transparent),
+      0 0 18px color-mix(in oklab, currentColor 35%, transparent);
+  }
+  .neon-text-soft {
+    text-shadow: 0 0 10px color-mix(in oklab, currentColor 40%, transparent);
+  }
+  /* Layered pixel logo: chromatic offset like a misconverged CRT */
+  .arcade-logo {
+    color: oklch(0.98 0.01 270);
+    text-shadow:
+      2px 0 0 var(--neon-magenta),
+      -2px 0 0 var(--neon-cyan),
+      0 3px 0 var(--arcade-ink),
+      0 0 22px oklch(0.7 0.22 300 / 0.7);
+  }
+
+  /* Marquee bulb strip that chases along an edge */
+  .arcade-marquee {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--neon-yellow) 0 4px,
+      transparent 4px 12px,
+      var(--neon-magenta) 12px 16px,
+      transparent 16px 24px
+    );
+    background-size: 24px 100%;
+  }
+
+  .pixel-corners {
+    clip-path: polygon(
+      0 6px,
+      6px 6px,
+      6px 0,
+      calc(100% - 6px) 0,
+      calc(100% - 6px) 6px,
+      100% 6px,
+      100% calc(100% - 6px),
+      calc(100% - 6px) calc(100% - 6px),
+      calc(100% - 6px) 100%,
+      6px 100%,
+      6px calc(100% - 6px),
+      0 calc(100% - 6px)
+    );
+  }
+
+  .scanline-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      oklch(1 0 0 / 0.03) 0 1px,
+      transparent 1px 4px
+    );
+  }
+
+  .hud-label {
+    font-family: var(--font-pixel);
+    font-size: 9px;
+    line-height: 1.5;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@keyframes spin-coin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+.coin-spin {
+  animation: spin-coin 1s linear infinite;
 }

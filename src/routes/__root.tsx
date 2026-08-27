@@ -15,17 +15,19 @@ import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="arcade-panel scanline-panel max-w-md p-8 text-center">
+        <h1 className="font-pixel text-5xl text-neon-magenta neon-text sm:text-6xl">404</h1>
+        <h2 className="mt-6 font-pixel text-sm uppercase text-neon-cyan neon-text-soft">
+          Page not found
+        </h2>
+        <p className="mt-4 text-sm text-muted-foreground">
           The page you're looking for doesn't exist or has been moved.
         </p>
-        <div className="mt-6">
+        <div className="mt-7">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="pixel-press inline-flex items-center justify-center border-2 border-arcade-ink bg-primary px-4 py-2.5 font-pixel text-[10px] uppercase tracking-wider text-primary-foreground [--pixel-glow:var(--neon-lime)]"
           >
             Go home
           </Link>
@@ -43,27 +45,28 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="arcade-panel scanline-panel max-w-md p-8 text-center">
+        <div className="hud-label text-neon-yellow animate-blink">! ! !</div>
+        <h1 className="mt-4 font-pixel text-base uppercase leading-relaxed text-destructive neon-text">
           This page didn't load
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-4 text-sm text-muted-foreground">
           Something went wrong on our end. You can try refreshing or head back home.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="pixel-press inline-flex cursor-pointer items-center justify-center border-2 border-arcade-ink bg-primary px-4 py-2.5 font-pixel text-[10px] uppercase tracking-wider text-primary-foreground [--pixel-glow:var(--neon-lime)]"
           >
             Try again
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="pixel-press arcade-field inline-flex items-center justify-center border-2 border-border px-4 py-2.5 font-pixel text-[10px] uppercase tracking-wider text-neon-cyan [--pixel-glow:var(--neon-cyan)]"
           >
             Go home
           </a>
@@ -83,6 +86,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@400;500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
