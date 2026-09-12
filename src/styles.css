@@ -136,6 +136,9 @@
   --arcade-ink: oklch(0.08 0.03 288);
   --arcade-edge: oklch(0.29 0.09 291);
   --arcade-grid: oklch(0.65 0.1 292 / 0.07);
+  --popover-shadow:
+    4px 4px 0 0 var(--arcade-ink),
+    0 0 24px 0 oklch(0.7 0.22 300 / 0.35);
 }
 
 /*
@@ -467,6 +470,221 @@
     line-height: 1.5;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+}
+
+/*
+ * BASIC THEME  ▸ html[data-theme="basic"]
+ *
+ * A plain, light, minimal skin. Selected from the Settings modal and
+ * persisted in localStorage (see src/lib/theme.ts). Everything below is an
+ * override layered on top of the arcade defaults — the arcade skin itself is
+ * untouched, and no component markup knows which theme is active.
+ *
+ * Strategy:
+ *   1. Swap the palette tokens (incl. remapping the neon-* accents onto plain
+ *      colours so `text-neon-cyan` etc. simply read as normal UI colours).
+ *   2. Neutralise the arcade-only utilities (pixel-press, arcade-panel, …).
+ *   3. Soften the hard-coded pixel typography/borders used by the primitives.
+ */
+:root[data-theme="basic"] {
+  --radius: 8px;
+
+  --background: oklch(0.985 0.003 250);
+  --foreground: oklch(0.2 0.02 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 260);
+  --primary: oklch(0.55 0.2 262);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.006 250);
+  --secondary-foreground: oklch(0.25 0.02 260);
+  --muted: oklch(0.955 0.006 250);
+  --muted-foreground: oklch(0.5 0.02 260);
+  --accent: oklch(0.94 0.025 262);
+  --accent-foreground: oklch(0.3 0.06 262);
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.008 250);
+  --input: oklch(0.88 0.01 250);
+  --ring: oklch(0.55 0.2 262);
+
+  --chart-1: oklch(0.55 0.2 262);
+  --chart-2: oklch(0.65 0.17 160);
+  --chart-3: oklch(0.7 0.18 50);
+  --chart-4: oklch(0.6 0.2 330);
+  --chart-5: oklch(0.65 0.15 200);
+
+  --sidebar: oklch(0.985 0.003 250);
+  --sidebar-foreground: oklch(0.2 0.02 260);
+  --sidebar-primary: oklch(0.55 0.2 262);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.955 0.006 250);
+  --sidebar-accent-foreground: oklch(0.2 0.02 260);
+  --sidebar-border: oklch(0.9 0.008 250);
+  --sidebar-ring: oklch(0.55 0.2 262);
+
+  /* Neon accents collapse onto plain UI colours */
+  --neon-lime: oklch(0.5 0.2 262); /* primary hover */
+  --neon-cyan: oklch(0.2 0.02 260); /* foreground */
+  --neon-magenta: oklch(0.6 0.2 330);
+  --neon-yellow: oklch(0.5 0.02 260); /* muted-foreground (labels) */
+  --neon-violet: oklch(0.9 0.008 250); /* border */
+  --neon-orange: oklch(0.7 0.18 50);
+
+  --arcade-ink: transparent;
+  --arcade-edge: oklch(0.9 0.008 250);
+  --arcade-grid: transparent;
+  --popover-shadow:
+    0 4px 12px oklch(0 0 0 / 0.08),
+    0 1px 3px oklch(0 0 0 / 0.06);
+}
+
+@layer base {
+  :root[data-theme="basic"] body {
+    background-image: none;
+  }
+  :root[data-theme="basic"] body::after {
+    display: none;
+  }
+  :root[data-theme="basic"] ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+  :root[data-theme="basic"] * {
+    scrollbar-color: oklch(0.8 0.01 250) transparent;
+  }
+  :root[data-theme="basic"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  :root[data-theme="basic"] ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  :root[data-theme="basic"] ::-webkit-scrollbar-thumb {
+    background: oklch(0.8 0.01 250);
+    border: 2px solid var(--background);
+    border-radius: 999px;
+  }
+  :root[data-theme="basic"] ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.7 0.01 250);
+  }
+  :root[data-theme="basic"] .recharts-text {
+    font-family: var(--font-sans);
+  }
+  :root[data-theme="basic"] input[type="date"],
+  :root[data-theme="basic"] input[type="color"] {
+    color-scheme: light;
+  }
+  :root[data-theme="basic"] input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: none;
+  }
+  :root[data-theme="basic"] input[type="color"]::-webkit-color-swatch {
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 4px);
+  }
+}
+
+@layer utilities {
+  /* Flat buttons: no sticker edge, just a soft lift */
+  :root[data-theme="basic"] .pixel-press {
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.05);
+    transition:
+      transform 80ms ease,
+      box-shadow 140ms ease,
+      background-color 140ms ease,
+      color 140ms ease,
+      border-color 140ms ease;
+  }
+  :root[data-theme="basic"] .pixel-press:hover:not(:disabled):not([data-disabled]) {
+    box-shadow: 0 2px 6px oklch(0 0 0 / 0.08);
+  }
+  :root[data-theme="basic"] .pixel-press:active:not(:disabled):not([data-disabled]) {
+    transform: translateY(1px);
+    box-shadow: none;
+  }
+
+  /* Plain cards */
+  :root[data-theme="basic"] .arcade-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background-color: var(--card);
+    background-image: none;
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.05);
+  }
+  :root[data-theme="basic"] .arcade-panel::before,
+  :root[data-theme="basic"] .scanline-panel::after {
+    display: none;
+  }
+
+  /* Plain fields */
+  :root[data-theme="basic"] .arcade-field {
+    background-color: var(--card);
+    box-shadow: none;
+  }
+  :root[data-theme="basic"] .arcade-field:focus,
+  :root[data-theme="basic"] .arcade-field:focus-visible,
+  :root[data-theme="basic"] .arcade-field[data-state="open"] {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent);
+  }
+
+  :root[data-theme="basic"] .neon-text,
+  :root[data-theme="basic"] .neon-text-soft,
+  :root[data-theme="basic"] .arcade-logo {
+    text-shadow: none;
+  }
+  :root[data-theme="basic"] .arcade-logo {
+    color: var(--foreground);
+  }
+  :root[data-theme="basic"] .arcade-marquee {
+    background-image: none;
+  }
+  :root[data-theme="basic"] .pixel-corners {
+    clip-path: none;
+  }
+  :root[data-theme="basic"] .coin-spin {
+    animation: none;
+  }
+
+  /* Pixel type becomes regular UI type */
+  :root[data-theme="basic"] .font-pixel,
+  :root[data-theme="basic"] .hud-label {
+    font-family: var(--font-sans);
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  :root[data-theme="basic"] .hud-label {
+    font-size: 0.75rem;
+  }
+  /* Micro pixel sizes read fine at 8–10px; a real font needs more */
+  :root[data-theme="basic"] .text-\[9px\],
+  :root[data-theme="basic"] .text-\[10px\] {
+    font-size: 0.8125rem;
+  }
+  :root[data-theme="basic"] .text-xs.font-pixel {
+    font-size: 0.75rem;
+  }
+
+  /* Hard pixel edges become thin, rounded ones */
+  :root[data-theme="basic"] .rounded-none {
+    border-radius: var(--radius);
+  }
+  :root[data-theme="basic"] .border-2 {
+    border-width: 1px;
+  }
+  :root[data-theme="basic"] .border-b-2 {
+    border-bottom-width: 1px;
+  }
+  :root[data-theme="basic"] .border-dashed {
+    border-style: solid;
+  }
+  /* Lighter dialog backdrop on a light canvas */
+  :root[data-theme="basic"] .bg-black\/80 {
+    background-color: oklch(0 0 0 / 0.4);
   }
 }
 

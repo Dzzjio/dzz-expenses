@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -52,6 +52,7 @@ import { SpendingLineChart } from "@/components/expense/SpendingLineChart";
 import { CategoryDialog } from "@/components/expense/CategoryDialog";
 import { MainCategoryDialog } from "@/components/expense/MainCategoryDialog";
 import { ExpenseDialog } from "@/components/expense/ExpenseDialog";
+import { SettingsDialog } from "@/components/SettingsDialog";
 
 import logo from '../../public/coin.png'
 
@@ -146,6 +147,7 @@ function DashboardPage() {
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [mcOpen, setMcOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseWithCategory | null>(null);
   const [deleting, setDeleting] = useState<ExpenseWithCategory | null>(null);
 
@@ -243,10 +245,14 @@ function DashboardPage() {
             <Button variant="outline" size="sm" onClick={() => setCatOpen(true)}>
               <Tag className="mr-1.5 h-4 w-4" /> Category
             </Button>
-            <Button asChild variant="ghost" size="sm" title="Manage categories">
-              <Link to="/manage-categories">
-                <Settings className="h-4 w-4" />
-              </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              title="Settings"
+              aria-label="Settings"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-1.5 h-4 w-4" /> Export
@@ -584,6 +590,7 @@ function DashboardPage() {
       />
       <CategoryDialog open={catOpen} onOpenChange={setCatOpen} />
       <MainCategoryDialog open={mcOpen} onOpenChange={setMcOpen} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
