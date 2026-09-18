@@ -11,6 +11,11 @@ export const THEMES = [
     name: "Basic",
     description: "Clean, light and minimal.",
   },
+  {
+    id: "grove",
+    name: "Grove",
+    description: "Dusk in the forest: moss, bark and fireflies.",
+  },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];

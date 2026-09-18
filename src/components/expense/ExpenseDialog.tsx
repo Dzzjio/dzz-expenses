@@ -28,8 +28,12 @@ import {
 } from "@/components/ui/select";
 import { CategoryDialog } from "./CategoryDialog";
 
+/** Local-time YYYY-MM-DD — toISOString() is UTC and gives yesterday's date before 04:00 in UTC+4. */
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
 }
 
 interface Props {

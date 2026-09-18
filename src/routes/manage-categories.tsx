@@ -84,7 +84,13 @@ function ManagePage() {
   const deleteCat = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("categories").delete().eq("id", id);
-      if (error) throw error;
+      if (error) {
+        // 23503 = foreign_key_violation: expenses still reference this category
+        if (error.code === "23503") {
+          throw new Error("This category still has expenses. Reassign them first.");
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success("Category deleted");

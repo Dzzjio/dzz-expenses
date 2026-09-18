@@ -34,6 +34,14 @@ const PREVIEWS: Record<ThemeId, React.ReactNode> = {
       <span className="h-4 w-3 rounded-sm bg-[oklch(0.85_0.06_262)]" />
     </div>
   ),
+  grove: (
+    <div className="relative flex h-10 w-16 shrink-0 items-end gap-1 overflow-hidden rounded-xl border border-[oklch(0.42_0.05_145)] bg-[oklch(0.2_0.035_155)] p-1.5">
+      <span className="absolute right-2 top-1.5 h-1 w-1 rounded-full bg-[oklch(0.9_0.15_90)] shadow-[0_0_6px_2px_oklch(0.9_0.15_90/0.6)]" />
+      <span className="h-3 w-3 rounded-full bg-[oklch(0.72_0.15_135)]" />
+      <span className="h-5 w-3 rounded-full bg-[oklch(0.82_0.14_85)]" />
+      <span className="h-4 w-3 rounded-full bg-[oklch(0.52_0.08_60)]" />
+    </div>
+  ),
 };
 
 export function SettingsDialog({ open, onOpenChange }: Props) {

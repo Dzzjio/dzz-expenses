@@ -1,7 +1,10 @@
-import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Minus,
   Plus,
   Download,
   Pencil,
@@ -16,8 +19,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportExpensesToExcel } from "@/lib/export-excel";
+import { cn } from "@/lib/utils";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import {
   fetchCategories,
   fetchExpenses,
@@ -53,8 +58,6 @@ import { CategoryDialog } from "@/components/expense/CategoryDialog";
 import { MainCategoryDialog } from "@/components/expense/MainCategoryDialog";
 import { ExpenseDialog } from "@/components/expense/ExpenseDialog";
 import { SettingsDialog } from "@/components/SettingsDialog";
-
-import logo from '../../public/coin.png'
 
 export const Route = createFileRoute("/")({
   component: DashboardPage,
@@ -120,6 +123,53 @@ function rangeLabel(
   return `${formatDate(from)} – ${formatDate(to)}`;
 }
 
+type Period = { from: string; to: string; label: string; shortLabel: string };
+
+/** The period immediately before the current one, same length. "All time" has none. */
+function previousPeriod(
+  preset: RangePreset,
+  from: string,
+  to: string,
+  monthCursor: Date,
+  yearCursor: number,
+): Period | null {
+  if (preset === "month") {
+    const p = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1);
+    return {
+      from: startOfMonthISO(p),
+      to: endOfMonthISO(p),
+      label: monthLabel(p),
+      shortLabel: p.toLocaleDateString(undefined, { month: "short", year: "numeric" }),
+    };
+  }
+  if (preset === "year") {
+    const y = yearCursor - 1;
+    return { from: `${y}-01-01`, to: `${y}-12-31`, label: String(y), shortLabel: String(y) };
+  }
+  if (preset === "custom") {
+    const start = new Date(from + "T00:00:00");
+    const end = new Date(to + "T00:00:00");
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return null;
+    const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+    const pEnd = new Date(start);
+    pEnd.setDate(pEnd.getDate() - 1);
+    const pStart = new Date(pEnd);
+    pStart.setDate(pStart.getDate() - (days - 1));
+    return {
+      from: iso(pStart),
+      to: iso(pEnd),
+      label: `${formatDate(iso(pStart))} – ${formatDate(iso(pEnd))}`,
+      shortLabel: "previous period",
+    };
+  }
+  return null;
+}
+
+function pctChange(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
 function fileLabel(preset: RangePreset, monthCursor: Date, yearCursor: number) {
   if (preset === "month")
     return `${monthCursor.getFullYear()}-${String(monthCursor.getMonth() + 1).padStart(2, "0")}`;
@@ -127,22 +177,31 @@ function fileLabel(preset: RangePreset, monthCursor: Date, yearCursor: number) {
   return todayISO();
 }
 
-
 function DashboardPage() {
   const qc = useQueryClient();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate({ to: "/auth", replace: true });
+  }, [authLoading, user, navigate]);
 
   const { data: mainCategories = [] } = useQuery({
-    queryKey: ["main_categories"],
+    queryKey: ["main_categories", user?.id],
     queryFn: fetchMainCategories,
+    enabled: !!user,
   });
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
+    queryKey: ["categories", user?.id],
     queryFn: fetchCategories,
+    enabled: !!user,
   });
-  const { data: expenses = [], isLoading } = useQuery({
-    queryKey: ["expenses"],
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
+    queryKey: ["expenses", user?.id],
     queryFn: fetchExpenses,
+    enabled: !!user,
   });
+  const isLoading = authLoading || expensesLoading;
 
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
@@ -153,6 +212,15 @@ function DashboardPage() {
 
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [mainFilter, setMainFilter] = useState<string>("all");
+
+  // Changing the main category drops a sub-category pick that no longer belongs to it,
+  // otherwise the Category select shows a stale value and every row gets filtered out.
+  function handleMainFilterChange(next: string) {
+    setMainFilter(next);
+    if (categoryFilter === "all" || next === "all") return;
+    const selected = categories.find((c) => c.id === categoryFilter);
+    if (selected && selected.main_category_id !== next) setCategoryFilter("all");
+  }
   const [rangePreset, setRangePreset] = useState<RangePreset>("month");
   const [monthCursor, setMonthCursor] = useState(() => {
     const n = new Date();
@@ -165,8 +233,7 @@ function DashboardPage() {
   const { from, to } = useMemo(() => {
     if (rangePreset === "month")
       return { from: startOfMonthISO(monthCursor), to: endOfMonthISO(monthCursor) };
-    if (rangePreset === "year")
-      return { from: `${yearCursor}-01-01`, to: `${yearCursor}-12-31` };
+    if (rangePreset === "year") return { from: `${yearCursor}-01-01`, to: `${yearCursor}-12-31` };
     if (rangePreset === "custom") return { from: customFrom, to: customTo };
     return { from: "0000-01-01", to: "9999-12-31" };
   }, [rangePreset, monthCursor, yearCursor, customFrom, customTo]);
@@ -179,23 +246,57 @@ function DashboardPage() {
     }
   }
 
-  const filtered = useMemo(() => {
-    return expenses.filter((e) => {
-      if (categoryFilter !== "all" && e.category_id !== categoryFilter) return false;
-      if (mainFilter !== "all" && e.category?.main_category_id !== mainFilter) return false;
-      if (e.expense_date < from || e.expense_date > to) return false;
-      return true;
-    });
-  }, [expenses, categoryFilter, mainFilter, from, to]);
+  const byCategory = useMemo(
+    () =>
+      expenses.filter((e) => {
+        if (categoryFilter !== "all" && e.category_id !== categoryFilter) return false;
+        if (mainFilter !== "all" && e.category?.main_category_id !== mainFilter) return false;
+        return true;
+      }),
+    [expenses, categoryFilter, mainFilter],
+  );
 
-  const stats = useMemo(() => {
-    const total = filtered.reduce((s, e) => s + Number(e.amount), 0);
-    const count = filtered.length;
-    const avg = count > 0 ? total / count : 0;
-    return { total, count, avg };
-  }, [filtered]);
+  const filtered = useMemo(
+    () => byCategory.filter((e) => e.expense_date >= from && e.expense_date <= to),
+    [byCategory, from, to],
+  );
+
+  const previous = useMemo(
+    () => previousPeriod(rangePreset, from, to, monthCursor, yearCursor),
+    [rangePreset, from, to, monthCursor, yearCursor],
+  );
+
+  // Same category filters, previous period — what the deltas and the dashed line compare against.
+  const prevFiltered = useMemo(
+    () =>
+      previous
+        ? byCategory.filter((e) => e.expense_date >= previous.from && e.expense_date <= previous.to)
+        : [],
+    [byCategory, previous],
+  );
+
+  const stats = useMemo(() => summarize(filtered), [filtered]);
+  const prevStats = useMemo(() => summarize(prevFiltered), [prevFiltered]);
 
   const label = rangeLabel(rangePreset, from, to, monthCursor, yearCursor);
+
+  // Clicking a slice or legend row drives the same filters as the selects (click again to clear).
+  function selectMain(id: string) {
+    if (mainFilter === id) {
+      setMainFilter("all");
+    } else {
+      setMainFilter(id);
+    }
+    setCategoryFilter("all");
+  }
+  function selectCategory(id: string, mainId: string) {
+    if (categoryFilter === id) {
+      setCategoryFilter("all");
+    } else {
+      setMainFilter(mainId);
+      setCategoryFilter(id);
+    }
+  }
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -219,6 +320,13 @@ function DashboardPage() {
     toast.success("Export ready");
   }
 
+  if (authLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -226,16 +334,13 @@ function DashboardPage() {
         {/* Header */}
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Logo" className="h-24 w-24 coin-spin" />
-            {/* <img src={logo} alt="Logo" className="h-24 w-24" /> */}
+            <img src="/coin.png" alt="Logo" className="h-24 w-24 coin-spin" />
 
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                 dzz-expenses
               </h1>
-              <p className="text-xs text-muted-foreground sm:text-sm">
-                Personal expense tracker
-              </p>
+              <p className="text-xs text-muted-foreground sm:text-sm">Personal expense tracker</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -244,15 +349,6 @@ function DashboardPage() {
             </Button>
             <Button variant="outline" size="sm" onClick={() => setCatOpen(true)}>
               <Tag className="mr-1.5 h-4 w-4" /> Category
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              title="Settings"
-              aria-label="Settings"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <Settings className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-1.5 h-4 w-4" /> Export
@@ -265,6 +361,16 @@ function DashboardPage() {
               }}
             >
               <Plus className="mr-1.5 h-4 w-4" /> Add expense
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              title="Settings"
+              aria-label="Settings"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
             </Button>
           </div>
         </header>
@@ -293,9 +399,7 @@ function DashboardPage() {
                 </div>
                 {(rangePreset === "month" || rangePreset === "year") && (
                   <div className="space-y-1.5">
-                    <Label className="text-xs">
-                      {rangePreset === "month" ? "Month" : "Year"}
-                    </Label>
+                    <Label className="text-xs">{rangePreset === "month" ? "Month" : "Year"}</Label>
                     <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
@@ -344,7 +448,7 @@ function DashboardPage() {
                 )}
                 <div className="space-y-1.5">
                   <Label className="text-xs">Main category</Label>
-                  <Select value={mainFilter} onValueChange={setMainFilter}>
+                  <Select value={mainFilter} onValueChange={handleMainFilterChange}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -400,18 +504,40 @@ function DashboardPage() {
             label="Total spent"
             value={formatCurrency(stats.total)}
             hint={label}
+            delta={
+              previous && {
+                pct: pctChange(stats.total, prevStats.total),
+                text: formatCurrency(Math.abs(stats.total - prevStats.total)),
+                vs: previous.shortLabel,
+              }
+            }
           />
           <SummaryCard
             icon={<Receipt className="h-4 w-4" />}
             label="Expenses"
             value={String(stats.count)}
             hint={label}
+            delta={
+              previous && {
+                pct: pctChange(stats.count, prevStats.count),
+                text: String(Math.abs(stats.count - prevStats.count)),
+                vs: previous.shortLabel,
+                absolute: true,
+              }
+            }
           />
           <SummaryCard
             icon={<Wallet className="h-4 w-4" />}
             label="Average / expense"
             value={formatCurrency(stats.avg)}
             hint={label}
+            delta={
+              previous && {
+                pct: pctChange(stats.avg, prevStats.avg),
+                text: formatCurrency(Math.abs(stats.avg - prevStats.avg)),
+                vs: previous.shortLabel,
+              }
+            }
           />
         </section>
 
@@ -422,7 +548,13 @@ function DashboardPage() {
               <CardTitle className="text-base">By category · {label}</CardTitle>
             </CardHeader>
             <CardContent>
-              <CategoryChart expenses={filtered} />
+              <CategoryChart
+                expenses={filtered}
+                activeMain={mainFilter}
+                activeCategory={categoryFilter}
+                onSelectMain={selectMain}
+                onSelectCategory={selectCategory}
+              />
             </CardContent>
           </Card>
           <Card>
@@ -430,7 +562,13 @@ function DashboardPage() {
               <CardTitle className="text-base">Spending over time · {label}</CardTitle>
             </CardHeader>
             <CardContent>
-              <SpendingLineChart expenses={filtered} from={from} to={to} />
+              <SpendingLineChart
+                expenses={filtered}
+                from={from}
+                to={to}
+                label={label}
+                compare={previous && { ...previous, expenses: prevFiltered }}
+              />
             </CardContent>
           </Card>
         </section>
@@ -542,9 +680,7 @@ function DashboardPage() {
                           </span>
                         </div>
                         {e.description && (
-                          <p className="mt-1.5 truncate text-sm text-foreground">
-                            {e.description}
-                          </p>
+                          <p className="mt-1.5 truncate text-sm text-foreground">{e.description}</p>
                         )}
                       </div>
                       <div className="text-right">
@@ -603,13 +739,14 @@ function DashboardPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              disabled={deleteMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();
                 if (deleting) deleteMutation.mutate(deleting.id);
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -618,16 +755,63 @@ function DashboardPage() {
   );
 }
 
+function summarize(list: ExpenseWithCategory[]) {
+  const total = list.reduce((s, e) => s + Number(e.amount), 0);
+  const count = list.length;
+  const avg = count > 0 ? total / count : 0;
+  return { total, count, avg };
+}
+
+type Delta = {
+  /** Percent change, or null when the previous period had nothing to compare against. */
+  pct: number | null;
+  /** Absolute change, already formatted. */
+  text: string;
+  /** What we're comparing with, e.g. "Aug 2026". */
+  vs: string;
+  /** Show the absolute change instead of the percentage (used for counts). */
+  absolute?: boolean;
+};
+
+/** Past this, "+6354%" says less than "+€3,177" does. */
+const PCT_DISPLAY_LIMIT = 1000;
+
+function DeltaBadge({ delta }: { delta: Delta }) {
+  if (delta.pct === null) {
+    return <span className="text-muted-foreground/70">no data for {delta.vs}</span>;
+  }
+  const flat = Math.abs(delta.pct) < 0.5;
+  const up = delta.pct > 0;
+  const Icon = flat ? Minus : up ? ArrowUpRight : ArrowDownRight;
+  const showAbsolute = delta.absolute || Math.abs(delta.pct) >= PCT_DISPLAY_LIMIT;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 tabular-nums",
+        // Spending more than before reads as a warning; less as a win.
+        flat ? "text-muted-foreground" : up ? "text-destructive" : "text-primary",
+      )}
+      title={`${up ? "+" : "−"}${delta.text} vs ${delta.vs}`}
+    >
+      <Icon className="h-3 w-3" />
+      {flat ? "same" : showAbsolute ? delta.text : `${Math.abs(delta.pct).toFixed(0)}%`}
+      <span className="ml-1 font-normal text-muted-foreground">vs {delta.vs}</span>
+    </span>
+  );
+}
+
 function SummaryCard({
   icon,
   label,
   value,
   hint,
+  delta,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   hint: string;
+  delta?: Delta | null;
 }) {
   return (
     <Card>
@@ -636,10 +820,11 @@ function SummaryCard({
           {icon}
           {label}
         </div>
-        <div className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-          {value}
+        <div className="mt-2 text-2xl font-semibold tabular-nums text-foreground">{value}</div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <span>{hint}</span>
+          {delta && <DeltaBadge delta={delta} />}
         </div>
-        <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>
       </CardContent>
     </Card>
   );
