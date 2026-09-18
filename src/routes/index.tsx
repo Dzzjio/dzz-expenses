@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
-  Minus,
   Plus,
   Download,
   Pencil,
@@ -12,13 +9,12 @@ import {
   Wallet,
   TrendingUp,
   Receipt,
-  Tag,
+  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -51,10 +47,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { CategoryBadge } from "@/components/expense/CategoryBadge";
+import { DeltaBadge, type Delta } from "@/components/expense/DeltaBadge";
 import { CategoryChart } from "@/components/expense/CategoryChart";
 import { SpendingLineChart } from "@/components/expense/SpendingLineChart";
-import { CategoryDialog } from "@/components/expense/CategoryDialog";
-import { MainCategoryDialog } from "@/components/expense/MainCategoryDialog";
 import { ExpenseDialog } from "@/components/expense/ExpenseDialog";
 import { SettingsDialog } from "@/components/SettingsDialog";
 
@@ -203,8 +198,6 @@ function DashboardPage() {
   const isLoading = authLoading || expensesLoading;
 
   const [expenseOpen, setExpenseOpen] = useState(false);
-  const [catOpen, setCatOpen] = useState(false);
-  const [mcOpen, setMcOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseWithCategory | null>(null);
   const [deleting, setDeleting] = useState<ExpenseWithCategory | null>(null);
@@ -361,11 +354,10 @@ function DashboardPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setMcOpen(true)}>
-              <Tag className="mr-1.5 h-4 w-4" /> Main category
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setCatOpen(true)}>
-              <Tag className="mr-1.5 h-4 w-4" /> Category
+            <Button asChild variant="outline" size="sm">
+              <Link to="/summary">
+                <BarChart3 className="mr-1.5 h-4 w-4" /> Summary
+              </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
               <Download className="mr-1.5 h-4 w-4" /> {exporting ? "Exporting…" : "Export"}
@@ -741,8 +733,6 @@ function DashboardPage() {
         categories={categories}
         expense={editing}
       />
-      <CategoryDialog open={catOpen} onOpenChange={setCatOpen} />
-      <MainCategoryDialog open={mcOpen} onOpenChange={setMcOpen} />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
@@ -777,44 +767,6 @@ function summarize(list: ExpenseWithCategory[]) {
   const count = list.length;
   const avg = count > 0 ? total / count : 0;
   return { total, count, avg };
-}
-
-type Delta = {
-  /** Percent change, or null when the previous period had nothing to compare against. */
-  pct: number | null;
-  /** Absolute change, already formatted. */
-  text: string;
-  /** What we're comparing with, e.g. "Aug 2026". */
-  vs: string;
-  /** Show the absolute change instead of the percentage (used for counts). */
-  absolute?: boolean;
-};
-
-/** Past this, "+6354%" says less than "+€3,177" does. */
-const PCT_DISPLAY_LIMIT = 1000;
-
-function DeltaBadge({ delta }: { delta: Delta }) {
-  if (delta.pct === null) {
-    return <span className="text-muted-foreground/70">no data for {delta.vs}</span>;
-  }
-  const flat = Math.abs(delta.pct) < 0.5;
-  const up = delta.pct > 0;
-  const Icon = flat ? Minus : up ? ArrowUpRight : ArrowDownRight;
-  const showAbsolute = delta.absolute || Math.abs(delta.pct) >= PCT_DISPLAY_LIMIT;
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-0.5 tabular-nums",
-        // Spending more than before reads as a warning; less as a win.
-        flat ? "text-muted-foreground" : up ? "text-destructive" : "text-primary",
-      )}
-      title={`${up ? "+" : "−"}${delta.text} vs ${delta.vs}`}
-    >
-      <Icon className="h-3 w-3" />
-      {flat ? "same" : showAbsolute ? delta.text : `${Math.abs(delta.pct).toFixed(0)}%`}
-      <span className="ml-1 font-normal text-muted-foreground">vs {delta.vs}</span>
-    </span>
-  );
 }
 
 function SummaryCard({
