@@ -18,7 +18,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { exportExpensesToExcel } from "@/lib/export-excel";
 import { cn } from "@/lib/utils";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -311,13 +310,31 @@ function DashboardPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  function handleExport() {
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
     if (filtered.length === 0) {
       toast.error(`No expenses in ${label}`);
       return;
     }
-    exportExpensesToExcel(filtered, fileLabel(rangePreset, monthCursor, yearCursor));
-    toast.success("Export ready");
+    setExporting(true);
+    try {
+      // Loaded on demand: the spreadsheet library is big and most sessions never export
+      const { exportExpensesToExcel } = await import("@/lib/export-excel");
+      await exportExpensesToExcel(filtered, {
+        periodLabel: label,
+        fileLabel: fileLabel(rangePreset, monthCursor, yearCursor),
+        filters: {
+          mainCategory: mainCategories.find((m) => m.id === mainFilter)?.name,
+          category: categories.find((c) => c.id === categoryFilter)?.name,
+        },
+      });
+      toast.success("Export ready");
+    } catch (err) {
+      toast.error(`Export failed: ${(err as Error).message}`);
+    } finally {
+      setExporting(false);
+    }
   }
 
   if (authLoading || !user) {
@@ -350,8 +367,8 @@ function DashboardPage() {
             <Button variant="outline" size="sm" onClick={() => setCatOpen(true)}>
               <Tag className="mr-1.5 h-4 w-4" /> Category
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="mr-1.5 h-4 w-4" /> Export
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+              <Download className="mr-1.5 h-4 w-4" /> {exporting ? "Exporting…" : "Export"}
             </Button>
             <Button
               size="sm"

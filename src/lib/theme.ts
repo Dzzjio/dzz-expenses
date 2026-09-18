@@ -16,6 +16,11 @@ export const THEMES = [
     name: "Grove",
     description: "Dusk in the forest: moss, bark and fireflies.",
   },
+  {
+    id: "medieval",
+    name: "Medieval",
+    description: "Illuminated manuscript: parchment, ink, wax and gold leaf.",
+  },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];

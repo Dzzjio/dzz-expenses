@@ -1009,6 +1009,254 @@
   }
 }
 
+/*
+ * MEDIEVAL THEME  ▸ html[data-theme="medieval"]
+ *
+ * An illuminated manuscript. Aged parchment with darkened edges, iron-gall
+ * ink for text, wax-seal crimson for primary actions, gold leaf for accents.
+ * Cinzel (Roman capitals) for titles, labels and buttons; Crimson Pro for
+ * body text. Cards are double-ruled frames with an inner gold rule; the CRT
+ * scanlines become a soft vignette.
+ */
+:root[data-theme="medieval"] {
+  --radius: 2px;
+
+  --font-sans: "Crimson Pro", "Iowan Old Style", Georgia, serif;
+  --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+
+  --background: oklch(0.92 0.032 85);
+  --foreground: oklch(0.26 0.035 50);
+  --card: oklch(0.955 0.028 86);
+  --card-foreground: oklch(0.26 0.035 50);
+  --popover: oklch(0.965 0.025 86);
+  --popover-foreground: oklch(0.26 0.035 50);
+  --primary: oklch(0.46 0.17 25);
+  --primary-foreground: oklch(0.97 0.02 85);
+  --secondary: oklch(0.86 0.04 80);
+  --secondary-foreground: oklch(0.26 0.035 50);
+  --muted: oklch(0.88 0.03 82);
+  --muted-foreground: oklch(0.48 0.04 55);
+  --accent: oklch(0.76 0.12 80);
+  --accent-foreground: oklch(0.26 0.035 50);
+  --destructive: oklch(0.5 0.18 25);
+  --destructive-foreground: oklch(0.97 0.02 85);
+  --border: oklch(0.7 0.055 70);
+  --input: oklch(0.76 0.045 75);
+  --ring: oklch(0.68 0.13 75);
+
+  --chart-1: oklch(0.46 0.17 25);
+  --chart-2: oklch(0.68 0.13 75);
+  --chart-3: oklch(0.45 0.09 145);
+  --chart-4: oklch(0.45 0.1 260);
+  --chart-5: oklch(0.45 0.1 320);
+
+  --sidebar: oklch(0.9 0.032 85);
+  --sidebar-foreground: oklch(0.26 0.035 50);
+  --sidebar-primary: oklch(0.46 0.17 25);
+  --sidebar-primary-foreground: oklch(0.97 0.02 85);
+  --sidebar-accent: oklch(0.88 0.03 82);
+  --sidebar-accent-foreground: oklch(0.26 0.035 50);
+  --sidebar-border: oklch(0.7 0.055 70);
+  --sidebar-ring: oklch(0.68 0.13 75);
+
+  /* Neon accents become manuscript pigments */
+  --neon-lime: oklch(0.4 0.17 25); /* primary hover: deeper wax */
+  --neon-cyan: oklch(0.3 0.045 45); /* titles, outline-button text: ink */
+  --neon-magenta: oklch(0.46 0.17 25); /* crimson */
+  --neon-yellow: oklch(0.5 0.1 65); /* labels: burnished gold */
+  --neon-violet: oklch(0.7 0.055 70); /* border */
+  --neon-orange: oklch(0.6 0.13 55);
+
+  --arcade-ink: oklch(0.3 0.045 45);
+  --arcade-edge: oklch(0.7 0.055 70);
+  --arcade-grid: transparent;
+  --gold: oklch(0.72 0.13 78);
+  --gold-deep: oklch(0.55 0.11 70);
+  --popover-shadow: 0 8px 24px -8px oklch(0.3 0.05 50 / 0.35), 0 0 0 1px oklch(0.6 0.07 65 / 0.5);
+}
+
+@layer base {
+  :root[data-theme="medieval"] body {
+    /* Parchment: a bright patch of light, faint fibre lines, darkened edges */
+    background-image:
+      radial-gradient(ellipse 45% 35% at 25% 12%, oklch(0.985 0.02 90 / 0.7), transparent 70%),
+      repeating-linear-gradient(0deg, oklch(0.5 0.05 70 / 0.028) 0 1px, transparent 1px 6px),
+      radial-gradient(ellipse 110% 85% at 50% 45%, transparent 55%, oklch(0.6 0.07 68 / 0.4) 100%);
+    background-size: auto;
+  }
+  /* Vignette instead of scanlines */
+  :root[data-theme="medieval"] body::after {
+    opacity: 1;
+    mix-blend-mode: multiply;
+    background-image: radial-gradient(
+      ellipse 100% 100% at 50% 50%,
+      transparent 60%,
+      oklch(0.45 0.07 60 / 0.22) 100%
+    );
+  }
+  :root[data-theme="medieval"] ::selection {
+    background: var(--gold);
+    color: var(--foreground);
+  }
+  :root[data-theme="medieval"] * {
+    scrollbar-color: oklch(0.6 0.06 65) transparent;
+  }
+  :root[data-theme="medieval"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  :root[data-theme="medieval"] ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  :root[data-theme="medieval"] ::-webkit-scrollbar-thumb {
+    background: oklch(0.6 0.06 65);
+    border: 2px solid var(--background);
+  }
+  :root[data-theme="medieval"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--gold-deep);
+  }
+  :root[data-theme="medieval"] .recharts-text {
+    font-family: var(--font-sans);
+  }
+  :root[data-theme="medieval"] input[type="date"],
+  :root[data-theme="medieval"] input[type="color"] {
+    color-scheme: light;
+  }
+  :root[data-theme="medieval"] input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: none;
+  }
+  :root[data-theme="medieval"] input[type="color"]::-webkit-color-swatch {
+    border: 1px solid var(--border);
+  }
+}
+
+@layer utilities {
+  /* Buttons: a pressed wax seal — dark rim, slight bevel */
+  :root[data-theme="medieval"] .pixel-press {
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.18),
+      inset 0 -2px 0 oklch(0 0 0 / 0.14),
+      0 1px 2px oklch(0.3 0.05 50 / 0.25);
+    transition:
+      transform 90ms ease,
+      box-shadow 140ms ease,
+      background-color 140ms ease,
+      color 140ms ease,
+      border-color 140ms ease,
+      filter 140ms ease;
+  }
+  :root[data-theme="medieval"] .pixel-press:hover:not(:disabled):not([data-disabled]) {
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.18),
+      inset 0 -2px 0 oklch(0 0 0 / 0.14),
+      0 3px 8px -2px oklch(0.3 0.05 50 / 0.35);
+  }
+  :root[data-theme="medieval"] .pixel-press:active:not(:disabled):not([data-disabled]) {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 3px oklch(0 0 0 / 0.25);
+  }
+
+  /* Cards: double-ruled frame with an inner gold rule */
+  :root[data-theme="medieval"] .arcade-panel {
+    border: 3px double oklch(0.55 0.07 65);
+    border-radius: 0;
+    background-color: var(--card);
+    background-image: linear-gradient(
+      170deg,
+      oklch(0.97 0.025 88 / 0.9),
+      oklch(0.94 0.03 84 / 0.95)
+    );
+    box-shadow:
+      inset 0 0 0 1px oklch(0.85 0.05 80 / 0.5),
+      0 6px 18px -8px oklch(0.3 0.05 50 / 0.35);
+  }
+  :root[data-theme="medieval"] .arcade-panel::before {
+    inset: 5px 5px auto 5px;
+    height: 1px;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--gold-deep) 15%,
+      var(--gold) 50%,
+      var(--gold-deep) 85%,
+      transparent
+    );
+    background-size: 100% 100%;
+    opacity: 0.9;
+  }
+  :root[data-theme="medieval"] .scanline-panel::after {
+    display: none;
+  }
+
+  /* Fields: pale vellum with a gold focus ring */
+  :root[data-theme="medieval"] .arcade-field {
+    background-color: oklch(0.975 0.02 88);
+    box-shadow: inset 0 1px 2px oklch(0.4 0.05 60 / 0.15);
+  }
+  :root[data-theme="medieval"] .arcade-field:focus,
+  :root[data-theme="medieval"] .arcade-field:focus-visible,
+  :root[data-theme="medieval"] .arcade-field[data-state="open"] {
+    border-color: var(--gold-deep);
+    box-shadow:
+      inset 0 1px 2px oklch(0.4 0.05 60 / 0.15),
+      0 0 0 3px color-mix(in oklab, var(--gold) 35%, transparent);
+  }
+
+  :root[data-theme="medieval"] .neon-text,
+  :root[data-theme="medieval"] .neon-text-soft,
+  :root[data-theme="medieval"] .arcade-logo {
+    text-shadow: none;
+  }
+  :root[data-theme="medieval"] .arcade-logo {
+    color: var(--foreground);
+  }
+  :root[data-theme="medieval"] .arcade-marquee {
+    background-image: none;
+  }
+  :root[data-theme="medieval"] .pixel-corners {
+    clip-path: none;
+  }
+
+  /* Roman capitals for titles, labels and buttons; the body face for text */
+  :root[data-theme="medieval"] .font-pixel,
+  :root[data-theme="medieval"] .hud-label {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+  :root[data-theme="medieval"] .hud-label,
+  :root[data-theme="medieval"] label.font-pixel,
+  :root[data-theme="medieval"] .text-\[9px\].font-pixel {
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+  }
+  :root[data-theme="medieval"] .pixel-press.text-\[9px\],
+  :root[data-theme="medieval"] .pixel-press.text-\[10px\] {
+    font-size: 0.7rem;
+  }
+  :root[data-theme="medieval"] .text-base.font-pixel {
+    font-size: 0.95rem;
+  }
+  /* Square manuscript edges, thin rules */
+  :root[data-theme="medieval"] .rounded-none {
+    border-radius: var(--radius);
+  }
+  :root[data-theme="medieval"] .border-2 {
+    border-width: 1px;
+  }
+  :root[data-theme="medieval"] .border-b-2 {
+    border-bottom-width: 1px;
+  }
+  :root[data-theme="medieval"] .border-dashed {
+    border-style: solid;
+  }
+  :root[data-theme="medieval"] .bg-black\/80 {
+    background-color: oklch(0.25 0.04 50 / 0.5);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
