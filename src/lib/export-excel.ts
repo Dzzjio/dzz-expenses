@@ -42,6 +42,14 @@ const cellBorder: Partial<ExcelJS.Borders> = { top: thin, bottom: thin, left: th
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
+/**
+ * A formula cell with its value pre-computed. Excel recalculates on open, but
+ * LibreOffice/Numbers/previews show the cached result — without it they show 0.
+ */
+function f(formula: string, result: number): ExcelJS.CellFormulaValue {
+  return { formula, result };
+}
+
 /** "YYYY-MM-DD" → Date at UTC midnight, so Excel shows exactly that day in any timezone. */
 function toExcelDate(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
@@ -175,18 +183,28 @@ function addExpensesSheet(
   });
   const lastData = firstData + sorted.length - 1;
   const amountRange = `E${firstData}:E${lastData}`;
+  const amounts = sorted.map((e) => Number(e.amount));
+  const sum = amounts.reduce((a, b) => a + b, 0);
 
   // Total — a live formula, so the sheet stays correct if rows are edited
   const total = ws.getRow(lastData + 1);
-  total.values = ["", "", "", "Total", { formula: `SUM(${amountRange})` }];
+  total.values = ["", "", "", "Total", f(`SUM(${amountRange})`, sum)];
   total.getCell(5).numFmt = CURRENCY;
   styleTotalRow(total);
 
   // Small summary block under the table
   const summary: [string, ExcelJS.CellValue, string?][] = [
-    ["Number of expenses", { formula: `COUNT(${amountRange})` }],
-    ["Average per expense", { formula: `AVERAGE(${amountRange})` }, CURRENCY],
-    ["Largest expense", { formula: `MAX(${amountRange})` }, CURRENCY],
+    ["Number of expenses", f(`COUNT(${amountRange})`, amounts.length)],
+    [
+      "Average per expense",
+      f(`AVERAGE(${amountRange})`, amounts.length ? sum / amounts.length : 0),
+      CURRENCY,
+    ],
+    [
+      "Largest expense",
+      f(`MAX(${amountRange})`, amounts.length ? Math.max(...amounts) : 0),
+      CURRENCY,
+    ],
   ];
   summary.forEach(([label, value, fmt], i) => {
     const row = ws.getRow(lastData + 3 + i);
@@ -311,20 +329,27 @@ function addMonthSheet(wb: ExcelJS.Workbook, expenses: ExpenseWithCategory[], op
     const b = months.get(k)!;
     const row = ws.getRow(firstData + i);
     const rowNo = firstData + i;
-    row.values = [toExcelDate(`${k}-01`), b.amount, b.count, { formula: `B${rowNo}/C${rowNo}` }];
+    row.values = [
+      toExcelDate(`${k}-01`),
+      b.amount,
+      b.count,
+      f(`B${rowNo}/C${rowNo}`, b.count ? b.amount / b.count : 0),
+    ];
     row.getCell(1).numFmt = MONTH;
     row.getCell(2).numFmt = CURRENCY;
     row.getCell(4).numFmt = CURRENCY;
     styleBodyRow(row, i);
   });
   const lastData = firstData + keys.length - 1;
+  const sumAmount = expenses.reduce((s, e) => s + Number(e.amount), 0);
+  const sumCount = expenses.length;
 
   const total = ws.getRow(lastData + 1);
   total.values = [
     "Total",
-    { formula: `SUM(B${firstData}:B${lastData})` },
-    { formula: `SUM(C${firstData}:C${lastData})` },
-    { formula: `B${lastData + 1}/C${lastData + 1}` },
+    f(`SUM(B${firstData}:B${lastData})`, sumAmount),
+    f(`SUM(C${firstData}:C${lastData})`, sumCount),
+    f(`B${lastData + 1}/C${lastData + 1}`, sumCount ? sumAmount / sumCount : 0),
   ];
   total.getCell(2).numFmt = CURRENCY;
   total.getCell(4).numFmt = CURRENCY;
@@ -339,6 +364,7 @@ export function buildWorkbook(expenses: ExpenseWithCategory[], opts: ExportOptio
   const wb = new ExcelJS.Workbook();
   wb.creator = "dzz-expenses";
   wb.created = new Date();
+  wb.calcProperties.fullCalcOnLoad = true;
 
   addExpensesSheet(wb, expenses, opts);
   addCategorySheet(wb, expenses, opts);
