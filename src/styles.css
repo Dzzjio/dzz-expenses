@@ -89,24 +89,24 @@
 :root {
   --radius: 4px;
 
-  --background: oklch(0.14 0.045 288);
+  --background: oklch(0.12 0.015 280);
   --foreground: oklch(0.96 0.015 270);
-  --card: oklch(0.21 0.055 288);
+  --card: oklch(0.17 0.02 280);
   --card-foreground: oklch(0.96 0.015 270);
-  --popover: oklch(0.18 0.05 288);
+  --popover: oklch(0.15 0.02 280);
   --popover-foreground: oklch(0.96 0.015 270);
   --primary: oklch(0.85 0.21 141);
   --primary-foreground: oklch(0.16 0.06 150);
-  --secondary: oklch(0.31 0.09 292);
+  --secondary: oklch(0.27 0.06 290);
   --secondary-foreground: oklch(0.95 0.02 270);
-  --muted: oklch(0.26 0.06 289);
-  --muted-foreground: oklch(0.74 0.05 285);
+  --muted: oklch(0.23 0.03 285);
+  --muted-foreground: oklch(0.72 0.03 285);
   --accent: oklch(0.85 0.16 200);
   --accent-foreground: oklch(0.16 0.06 240);
   --destructive: oklch(0.66 0.25 18);
   --destructive-foreground: oklch(0.98 0.01 270);
-  --border: oklch(0.42 0.11 291);
-  --input: oklch(0.34 0.09 291);
+  --border: oklch(0.45 0.1 291);
+  --input: oklch(0.36 0.08 291);
   --ring: oklch(0.85 0.16 200);
 
   --chart-1: oklch(0.85 0.21 141);
@@ -115,13 +115,13 @@
   --chart-4: oklch(0.9 0.19 100);
   --chart-5: oklch(0.7 0.22 300);
 
-  --sidebar: oklch(0.18 0.05 288);
+  --sidebar: oklch(0.15 0.02 280);
   --sidebar-foreground: oklch(0.96 0.015 270);
   --sidebar-primary: oklch(0.85 0.21 141);
   --sidebar-primary-foreground: oklch(0.16 0.06 150);
-  --sidebar-accent: oklch(0.26 0.06 289);
+  --sidebar-accent: oklch(0.23 0.03 285);
   --sidebar-accent-foreground: oklch(0.96 0.015 270);
-  --sidebar-border: oklch(0.42 0.11 291);
+  --sidebar-border: oklch(0.45 0.1 291);
   --sidebar-ring: oklch(0.85 0.16 200);
 
   /* Neon accent ramp used by the arcade chrome */
@@ -133,10 +133,10 @@
   --neon-orange: oklch(0.78 0.19 55);
 
   /* Hard-shadow "sticker" edges */
-  --arcade-ink: oklch(0.08 0.03 288);
-  --arcade-edge: oklch(0.29 0.09 291);
-  --arcade-grid: oklch(0.65 0.1 292 / 0.07);
-  --popover-shadow: 4px 4px 0 0 var(--arcade-ink), 0 0 24px 0 oklch(0.7 0.22 300 / 0.35);
+  --arcade-ink: oklch(0.06 0.01 280);
+  --arcade-edge: oklch(0.3 0.07 291);
+  --arcade-grid: oklch(0.65 0.08 292 / 0.08);
+  --popover-shadow: 4px 4px 0 0 var(--arcade-ink);
 }
 
 /*
@@ -144,37 +144,37 @@
  * palette so the skin stays consistent whichever scheme is active.
  */
 .dark {
-  --background: oklch(0.14 0.045 288);
+  --background: oklch(0.12 0.015 280);
   --foreground: oklch(0.96 0.015 270);
-  --card: oklch(0.21 0.055 288);
+  --card: oklch(0.17 0.02 280);
   --card-foreground: oklch(0.96 0.015 270);
-  --popover: oklch(0.18 0.05 288);
+  --popover: oklch(0.15 0.02 280);
   --popover-foreground: oklch(0.96 0.015 270);
   --primary: oklch(0.85 0.21 141);
   --primary-foreground: oklch(0.16 0.06 150);
-  --secondary: oklch(0.31 0.09 292);
+  --secondary: oklch(0.27 0.06 290);
   --secondary-foreground: oklch(0.95 0.02 270);
-  --muted: oklch(0.26 0.06 289);
-  --muted-foreground: oklch(0.74 0.05 285);
+  --muted: oklch(0.23 0.03 285);
+  --muted-foreground: oklch(0.72 0.03 285);
   --accent: oklch(0.85 0.16 200);
   --accent-foreground: oklch(0.16 0.06 240);
   --destructive: oklch(0.66 0.25 18);
   --destructive-foreground: oklch(0.98 0.01 270);
-  --border: oklch(0.42 0.11 291);
-  --input: oklch(0.34 0.09 291);
+  --border: oklch(0.45 0.1 291);
+  --input: oklch(0.36 0.08 291);
   --ring: oklch(0.85 0.16 200);
   --chart-1: oklch(0.85 0.21 141);
   --chart-2: oklch(0.85 0.16 200);
   --chart-3: oklch(0.72 0.28 340);
   --chart-4: oklch(0.9 0.19 100);
   --chart-5: oklch(0.7 0.22 300);
-  --sidebar: oklch(0.18 0.05 288);
+  --sidebar: oklch(0.15 0.02 280);
   --sidebar-foreground: oklch(0.96 0.015 270);
   --sidebar-primary: oklch(0.85 0.21 141);
   --sidebar-primary-foreground: oklch(0.16 0.06 150);
-  --sidebar-accent: oklch(0.26 0.06 289);
+  --sidebar-accent: oklch(0.23 0.03 285);
   --sidebar-accent-foreground: oklch(0.96 0.015 270);
-  --sidebar-border: oklch(0.42 0.11 291);
+  --sidebar-border: oklch(0.45 0.1 291);
   --sidebar-ring: oklch(0.85 0.16 200);
 }
 
@@ -244,17 +244,11 @@
     font-family: var(--font-sans);
     background-color: var(--color-background);
     color: var(--color-foreground);
-    /* Cabinet backdrop: neon spill + a faint pixel grid */
+    /* Cabinet backdrop: flat CRT black with a faint pixel grid */
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.45 0.2 300 / 0.35), transparent 70%),
-      radial-gradient(ellipse 70% 50% at 100% 110%, oklch(0.5 0.16 200 / 0.22), transparent 70%),
-      radial-gradient(ellipse 60% 40% at 0% 100%, oklch(0.5 0.2 340 / 0.16), transparent 70%),
       linear-gradient(var(--arcade-grid) 1px, transparent 1px),
       linear-gradient(90deg, var(--arcade-grid) 1px, transparent 1px);
     background-size:
-      auto,
-      auto,
-      auto,
       32px 32px,
       32px 32px;
     background-attachment: fixed;
@@ -346,44 +340,32 @@
   .pixel-press:hover:not(:disabled):not([data-disabled]) {
     box-shadow:
       3px 3px 0 0 var(--pixel-edge, var(--arcade-edge)),
-      0 0 16px 0 var(--pixel-glow, transparent);
+      0 0 0 0 transparent;
   }
   .pixel-press:active:not(:disabled):not([data-disabled]) {
     transform: translate(3px, 3px);
     box-shadow:
       0 0 0 0 transparent,
-      0 0 12px 0 var(--pixel-glow, transparent);
+      0 0 0 0 transparent;
   }
 
   /* Cabinet panel: pixel frame + sticker shadow + LED strip on top */
   .arcade-panel {
     position: relative;
     border: 2px solid var(--border);
-    background-image: linear-gradient(
-      180deg,
-      oklch(0.24 0.06 289 / 0.92),
-      oklch(0.17 0.05 289 / 0.94)
-    );
-    box-shadow:
-      inset 0 1px 0 oklch(0.8 0.08 290 / 0.18),
-      inset 0 0 32px oklch(0.6 0.16 300 / 0.07),
-      5px 5px 0 0 oklch(0.1 0.035 289);
+    background-color: var(--card);
+    box-shadow: 5px 5px 0 0 var(--arcade-ink);
   }
+  /* A single solid accent stripe along the top edge, like a cabinet bezel */
   .arcade-panel::before {
     content: "";
     position: absolute;
     inset: -2px -2px auto -2px;
     height: 3px;
-    background-image: linear-gradient(
-      90deg,
-      var(--neon-cyan),
-      var(--neon-violet),
-      var(--neon-magenta),
-      var(--neon-lime),
-      var(--neon-cyan)
-    );
-    background-size: 200% 100%;
-    opacity: 0.85;
+    background-color: var(--neon-magenta);
+    background-image: none;
+    background-size: auto;
+    opacity: 1;
   }
 
   /* Field wells read as recessed cabinet slots */
@@ -399,26 +381,23 @@
     border-color: var(--neon-cyan);
     box-shadow:
       inset 2px 2px 0 0 oklch(0.08 0.03 289),
-      0 0 14px 0 oklch(0.85 0.16 200 / 0.45);
+      0 0 0 2px oklch(0.85 0.16 200 / 0.5);
   }
 
   /* Neon type */
   .neon-text {
-    text-shadow:
-      0 0 6px color-mix(in oklab, currentColor 60%, transparent),
-      0 0 18px color-mix(in oklab, currentColor 35%, transparent);
+    text-shadow: 3px 3px 0 var(--arcade-ink);
   }
   .neon-text-soft {
-    text-shadow: 0 0 10px color-mix(in oklab, currentColor 40%, transparent);
+    text-shadow: 2px 2px 0 var(--arcade-ink);
   }
   /* Layered pixel logo: chromatic offset like a misconverged CRT */
   .arcade-logo {
     color: oklch(0.98 0.01 270);
     text-shadow:
-      2px 0 0 var(--neon-magenta),
-      -2px 0 0 var(--neon-cyan),
-      0 3px 0 var(--arcade-ink),
-      0 0 22px oklch(0.7 0.22 300 / 0.7);
+      3px 0 0 var(--neon-magenta),
+      -3px 0 0 var(--neon-cyan),
+      3px 4px 0 var(--arcade-ink);
   }
 
   /* Marquee bulb strip that chases along an edge */
@@ -460,6 +439,11 @@
       oklch(1 0 0 / 0.03) 0 1px,
       transparent 1px 4px
     );
+  }
+
+  /* Spinning arcade coin (themes override the animation below) */
+  .coin-spin {
+    animation: spin-coin 1s linear infinite;
   }
 
   .hud-label {
@@ -631,8 +615,10 @@
   :root[data-theme="basic"] .arcade-logo {
     text-shadow: none;
   }
-  :root[data-theme="basic"] .arcade-logo {
-    color: var(--foreground);
+  :root[data-theme="basic"] .arcade-logo.font-pixel {
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
   :root[data-theme="basic"] .arcade-marquee {
     background-image: none;
@@ -906,6 +892,7 @@
   :root[data-theme="grove"] .arcade-panel::before {
     inset: 0 0 auto 0;
     height: 2px;
+    background-color: transparent;
     background-image: linear-gradient(
       90deg,
       transparent,
@@ -955,6 +942,9 @@
   }
   :root[data-theme="grove"] .coin-spin {
     animation: arcade-float 3.6s ease-in-out infinite;
+    /* Dark wood on a dark forest: a firefly glow lifts it off the page */
+    filter: drop-shadow(0 0 14px oklch(0.8 0.12 95 / 0.45))
+      drop-shadow(0 2px 4px oklch(0 0 0 / 0.5));
   }
 
   /* Titles in a soft serif; buttons and labels in the rounded body face */
@@ -1173,6 +1163,7 @@
   :root[data-theme="medieval"] .arcade-panel::before {
     inset: 5px 5px auto 5px;
     height: 1px;
+    background-color: transparent;
     background-image: linear-gradient(
       90deg,
       transparent,
@@ -1208,13 +1199,17 @@
     text-shadow: none;
   }
   :root[data-theme="medieval"] .arcade-logo {
-    color: var(--foreground);
+    color: var(--primary);
   }
   :root[data-theme="medieval"] .arcade-marquee {
     background-image: none;
   }
   :root[data-theme="medieval"] .pixel-corners {
     clip-path: none;
+  }
+  /* A heavy gold coin turns slowly */
+  :root[data-theme="medieval"] .coin-spin {
+    animation: spin-coin 6s linear infinite;
   }
 
   /* Roman capitals for titles, labels and buttons; the body face for text */
@@ -1274,8 +1269,4 @@
   to {
     transform: rotateY(360deg);
   }
-}
-
-.coin-spin {
-  animation: spin-coin 1s linear infinite;
 }

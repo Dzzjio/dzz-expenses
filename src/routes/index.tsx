@@ -52,6 +52,7 @@ import { CategoryChart } from "@/components/expense/CategoryChart";
 import { SpendingLineChart } from "@/components/expense/SpendingLineChart";
 import { ExpenseDialog } from "@/components/expense/ExpenseDialog";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { AppLogo } from "@/components/AppLogo";
 
 export const Route = createFileRoute("/")({
   component: DashboardPage,
@@ -344,13 +345,13 @@ function DashboardPage() {
         {/* Header */}
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <img src="/coin.png" alt="Logo" className="h-24 w-24 coin-spin" />
+            <AppLogo />
 
             <div>
-              <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              <h1 className="arcade-logo font-pixel text-lg uppercase leading-none tracking-wide sm:text-2xl">
                 dzz-expenses
               </h1>
-              <p className="text-xs text-muted-foreground sm:text-sm">Personal expense tracker</p>
+              <p className="hud-label mt-2 text-neon-yellow">Personal expense tracker</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
