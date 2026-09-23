@@ -25,7 +25,7 @@ function SliceTooltip({
   payload,
   total,
 }: {
-  active?: boolean;
+  active?: boolean; 
   payload?: TooltipPayload;
   total: number;
 }) {
