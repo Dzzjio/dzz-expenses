@@ -63,7 +63,9 @@ function AuthPage() {
       }
       navigate({ to: "/", replace: true });
     } catch (err) {
-      toast.error((err as Error).message);
+      // supabase-js reports 5xx responses with an empty "{}" message.
+      const message = (err as Error).message;
+      toast.error(message && message !== "{}" ? message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
