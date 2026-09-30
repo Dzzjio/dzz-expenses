@@ -733,6 +733,7 @@ function DashboardPage() {
         onOpenChange={setExpenseOpen}
         categories={categories}
         expense={editing}
+        expenses={expenses}
       />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 

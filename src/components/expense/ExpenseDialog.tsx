@@ -1,10 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import type { CategoryWithMain, ExpenseWithCategory } from "@/lib/expenses";
+import {
+  localIsoDate,
+  quickPickCategories,
+  type CategoryWithMain,
+  type ExpenseWithCategory,
+} from "@/lib/expenses";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,28 +33,30 @@ import {
 } from "@/components/ui/select";
 import { CategoryDialog } from "./CategoryDialog";
 
-/** Local-time YYYY-MM-DD — toISOString() is UTC and gives yesterday's date before 04:00 in UTC+4. */
-function today() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
-}
-
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   categories: CategoryWithMain[];
   expense?: ExpenseWithCategory | null;
+  /** Used to work out which categories to offer as quick picks. */
+  expenses?: ExpenseWithCategory[];
 }
 
-export function ExpenseDialog({ open, onOpenChange, categories, expense }: Props) {
+export function ExpenseDialog({ open, onOpenChange, categories, expense, expenses = [] }: Props) {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [date, setDate] = useState(today());
+  const [date, setDate] = useState(localIsoDate());
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const qc = useQueryClient();
+
+  const quickPicks = useMemo(
+    () => quickPickCategories(categories, expenses),
+    [categories, expenses],
+  );
+  // Read through a ref so a background refetch of expenses doesn't reset an open form
+  const defaultCategoryId = useRef("");
+  defaultCategoryId.current = quickPicks[0]?.category.id ?? categories[0]?.id ?? "";
 
   useEffect(() => {
     if (open) {
@@ -61,8 +68,8 @@ export function ExpenseDialog({ open, onOpenChange, categories, expense }: Props
       } else {
         setAmount("");
         setDescription("");
-        setCategoryId(categories[0]?.id ?? "");
-        setDate(today());
+        setCategoryId(defaultCategoryId.current);
+        setDate(localIsoDate());
       }
     }
   }, [open, expense, categories]);
@@ -91,15 +98,10 @@ export function ExpenseDialog({ open, onOpenChange, categories, expense }: Props
         expense_date: date,
       };
       if (expense) {
-        const { error } = await supabase
-          .from("expenses")
-          .update(payload)
-          .eq("id", expense.id);
+        const { error } = await supabase.from("expenses").update(payload).eq("id", expense.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("expenses")
-          .insert(payload as never);
+        const { error } = await supabase.from("expenses").insert(payload as never);
         if (error) throw error;
       }
     },
@@ -120,9 +122,7 @@ export function ExpenseDialog({ open, onOpenChange, categories, expense }: Props
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{expense ? "Edit expense" : "Add expense"}</DialogTitle>
-            <DialogDescription>
-              Track a new spend to keep your budget on target.
-            </DialogDescription>
+            <DialogDescription>Track a new spend to keep your budget on target.</DialogDescription>
           </DialogHeader>
           <form
             onSubmit={(e) => {
@@ -171,6 +171,41 @@ export function ExpenseDialog({ open, onOpenChange, categories, expense }: Props
                   <Plus className="h-3 w-3" /> New
                 </Button>
               </div>
+              {quickPicks.length > 0 && (
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick picks">
+                  {quickPicks.map(({ category: c, pinned }) => {
+                    const selected = c.id === categoryId;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setCategoryId(c.id)}
+                        className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        style={
+                          selected
+                            ? { backgroundColor: c.color, borderColor: c.color, color: "#fff" }
+                            : {
+                                backgroundColor: `${c.color}18`,
+                                borderColor: `${c.color}55`,
+                                color: c.color,
+                              }
+                        }
+                      >
+                        {pinned ? (
+                          <Star className="h-3 w-3 fill-current" />
+                        ) : (
+                          <span
+                            className="h-1.5 w-1.5 rounded-full"
+                            style={{ backgroundColor: selected ? "#fff" : c.color }}
+                          />
+                        )}
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <Select value={categoryId} onValueChange={setCategoryId}>
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select category" />
@@ -204,12 +239,7 @@ export function ExpenseDialog({ open, onOpenChange, categories, expense }: Props
 
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
+              <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
 
             <DialogFooter>

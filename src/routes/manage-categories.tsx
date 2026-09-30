@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  FREQUENT_MIN_USES,
+  FREQUENT_WINDOW_DAYS,
   fetchCategories,
+  fetchExpenses,
   fetchMainCategories,
+  quickPickCategories,
   type CategoryWithMain,
   type MainCategory,
 } from "@/lib/expenses";
@@ -36,7 +40,10 @@ export const Route = createFileRoute("/manage-categories")({
       { title: "Manage categories — Spend" },
       { name: "description", content: "Manage main categories and categories for your expenses." },
       { property: "og:title", content: "Manage categories — Spend" },
-      { property: "og:description", content: "Manage main categories and categories for your expenses." },
+      {
+        property: "og:description",
+        content: "Manage main categories and categories for your expenses.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -63,6 +70,25 @@ function ManagePage() {
     queryFn: fetchCategories,
     enabled: !!user,
   });
+  const { data: expenses = [] } = useQuery({
+    queryKey: ["expenses", user?.id],
+    queryFn: fetchExpenses,
+    enabled: !!user,
+  });
+
+  const quickPicks = useMemo(() => quickPickCategories(cats, expenses), [cats, expenses]);
+
+  // Most used overall that aren't quick picks yet — offered as one-tap additions
+  const suggestions = useMemo(() => {
+    const picked = new Set(quickPicks.map((p) => p.category.id));
+    const uses = new Map<string, number>();
+    for (const e of expenses) uses.set(e.category_id, (uses.get(e.category_id) ?? 0) + 1);
+    return cats
+      .filter((c) => !picked.has(c.id) && (uses.get(c.id) ?? 0) > 0)
+      .map((category) => ({ category, uses: uses.get(category.id) ?? 0 }))
+      .sort((a, b) => b.uses - a.uses || a.category.name.localeCompare(b.category.name))
+      .slice(0, 6);
+  }, [cats, expenses, quickPicks]);
 
   const catsByMain = useMemo(() => {
     const m = new Map<string, CategoryWithMain[]>();
@@ -80,6 +106,21 @@ function ManagePage() {
   const [editCat, setEditCat] = useState<CategoryWithMain | null>(null);
   const [delMc, setDelMc] = useState<MainCategory | null>(null);
   const [delCat, setDelCat] = useState<CategoryWithMain | null>(null);
+
+  const setFavorite = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("categories")
+        .update({ is_favorite: value })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { value }) => {
+      toast.success(value ? "Added to quick picks" : "Removed from quick picks");
+      qc.invalidateQueries({ queryKey: ["categories"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const deleteCat = useMutation({
     mutationFn: async (id: string) => {
@@ -166,6 +207,83 @@ function ManagePage() {
         </header>
 
         <div className="mt-6 space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Star className="h-4 w-4" /> Quick picks
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                One-tap buttons when you add an expense. Pinned categories always show; others show
+                automatically once used more than {FREQUENT_MIN_USES} times in the last{" "}
+                {FREQUENT_WINDOW_DAYS} days.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {quickPicks.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No quick picks yet. Pin a category with the star below.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {quickPicks.map(({ category: c, pinned, recentUses }) => (
+                    <span
+                      key={c.id}
+                      className="inline-flex items-center gap-1.5 rounded-full border py-0.5 pl-2.5 pr-1 text-xs font-medium"
+                      style={{
+                        backgroundColor: `${c.color}18`,
+                        borderColor: `${c.color}55`,
+                        color: c.color,
+                      }}
+                    >
+                      {pinned && <Star className="h-3 w-3 fill-current" />}
+                      {c.name}
+                      {!pinned && (
+                        <span className="font-normal opacity-70">auto · {recentUses}×</span>
+                      )}
+                      <button
+                        type="button"
+                        className="rounded-full p-1 hover:bg-foreground/10 disabled:opacity-50"
+                        disabled={setFavorite.isPending}
+                        onClick={() => setFavorite.mutate({ id: c.id, value: !pinned })}
+                        aria-label={pinned ? `Unpin ${c.name}` : `Pin ${c.name}`}
+                        title={pinned ? "Unpin" : "Pin so it always shows"}
+                      >
+                        {pinned ? <X className="h-3 w-3" /> : <Star className="h-3 w-3" />}
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {suggestions.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Most used — tap to add
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestions.map(({ category: c, uses }) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        disabled={setFavorite.isPending}
+                        onClick={() => setFavorite.mutate({ id: c.id, value: true })}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-dashed px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-solid hover:text-foreground disabled:opacity-50"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: c.color }}
+                        />
+                        {c.name}
+                        <span className="font-normal opacity-70">{uses}×</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {mains.length === 0 && (
             <p className="text-sm text-muted-foreground">No main categories yet.</p>
           )}
@@ -212,12 +330,32 @@ function ManagePage() {
                   ) : (
                     <ul className="divide-y">
                       {children.map((c) => (
-                        <li
-                          key={c.id}
-                          className="flex items-center justify-between py-2"
-                        >
+                        <li key={c.id} className="flex items-center justify-between py-2">
                           <CategoryBadge category={c} />
                           <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={
+                                c.is_favorite
+                                  ? "h-7 w-7 text-amber-500 hover:text-amber-500"
+                                  : "h-7 w-7"
+                              }
+                              disabled={setFavorite.isPending}
+                              onClick={() =>
+                                setFavorite.mutate({ id: c.id, value: !c.is_favorite })
+                              }
+                              aria-label={c.is_favorite ? `Unpin ${c.name}` : `Pin ${c.name}`}
+                              title={
+                                c.is_favorite ? "Remove from quick picks" : "Add to quick picks"
+                              }
+                            >
+                              <Star
+                                className={
+                                  c.is_favorite ? "h-3.5 w-3.5 fill-current" : "h-3.5 w-3.5"
+                                }
+                              />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -249,16 +387,8 @@ function ManagePage() {
         </div>
       </div>
 
-      <MainCategoryDialog
-        open={mcOpen}
-        onOpenChange={setMcOpen}
-        mainCategory={editMc}
-      />
-      <CategoryDialog
-        open={catOpen}
-        onOpenChange={setCatOpen}
-        category={editCat}
-      />
+      <MainCategoryDialog open={mcOpen} onOpenChange={setMcOpen} mainCategory={editMc} />
+      <CategoryDialog open={catOpen} onOpenChange={setCatOpen} category={editCat} />
 
       <AlertDialog open={!!delMc} onOpenChange={(o) => !o && setDelMc(null)}>
         <AlertDialogContent>

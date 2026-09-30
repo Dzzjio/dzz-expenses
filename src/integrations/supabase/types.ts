@@ -19,6 +19,7 @@ export type Database = {
           color: string
           created_at: string
           id: string
+          is_favorite: boolean
           main_category_id: string
           name: string
           user_id: string
@@ -27,6 +28,7 @@ export type Database = {
           color?: string
           created_at?: string
           id?: string
+          is_favorite?: boolean
           main_category_id: string
           name: string
           user_id: string
@@ -35,6 +37,7 @@ export type Database = {
           color?: string
           created_at?: string
           id?: string
+          is_favorite?: boolean
           main_category_id?: string
           name?: string
           user_id?: string
