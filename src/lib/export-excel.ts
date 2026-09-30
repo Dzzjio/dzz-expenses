@@ -3,11 +3,10 @@ import ExcelJS from "exceljs";
 import type { ExpenseWithCategory } from "@/lib/expenses";
 
 /**
- * This file controls the DESIGN of the exported Excel workbook. It is laid out
- * like a formal expense report:
+ * This file controls the DESIGN of the exported Excel workbook:
  *
- *   Sheet "Summary"              – report details, key figures, spending by main
- *                                  category → category, and by month (2+ months)
+ *   Sheet "Summary"              – spending by main category → category, with
+ *                                  counts, amounts and share of the total
  *   Sheet "Detail by category"   – every transaction grouped main category →
  *                                  category, with subtotals. Uses Excel outline
  *                                  grouping, so the [1][2][3] buttons collapse it
@@ -21,11 +20,11 @@ import type { ExpenseWithCategory } from "@/lib/expenses";
  */
 
 export interface ExportOptions {
-  /** Human label for the period, e.g. "September 2026". Goes in the title block. */
+  /** Human label for the period, e.g. "September 2026". Goes in the file properties. */
   periodLabel: string;
   /** Filename-safe label, e.g. "2026-09". */
   fileLabel: string;
-  /** Active filters, shown in the title block so the reader knows what's included. */
+  /** Active filters (currently not shown in the workbook). */
   filters?: { mainCategory?: string; category?: string };
 }
 
@@ -47,7 +46,6 @@ const PERCENT = "0.0%";
 const INTEGER = "#,##0";
 const REF = "000";
 const DATE = "dd mmm yyyy";
-const MONTH = "mmmm yyyy";
 
 const FONT = "Calibri";
 
@@ -70,10 +68,6 @@ function f(formula: string, result: number): ExcelJS.CellFormulaValue {
 function toExcelDate(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d));
-}
-
-function longDate(d: Date) {
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
 /** 1 → "A", 5 → "E" (sheets here never go past column Z). */
@@ -110,19 +104,7 @@ function alignRight(cell: ExcelJS.Cell) {
   cell.alignment = { ...cell.alignment, vertical: "middle", horizontal: "right" };
 }
 
-function scopeText(opts: ExportOptions) {
-  const bits: string[] = [];
-  if (opts.filters?.mainCategory) bits.push(`Main category “${opts.filters.mainCategory}”`);
-  if (opts.filters?.category) bits.push(`Category “${opts.filters.category}”`);
-  return bits.length ? bits.join(", ") : "All categories";
-}
-
-/** Page header/footer codes treat "&" as a control character. */
-function escapeHF(s: string) {
-  return s.replace(/&/g, "&&");
-}
-
-function newSheet(wb: ExcelJS.Workbook, name: string, widths: number[], opts: ExportOptions) {
+function newSheet(wb: ExcelJS.Workbook, name: string, widths: number[]) {
   const ws = wb.addWorksheet(name, {
     properties: { tabColor: { argb: NAVY }, defaultRowHeight: 18 },
     pageSetup: {
@@ -134,9 +116,6 @@ function newSheet(wb: ExcelJS.Workbook, name: string, widths: number[], opts: Ex
       horizontalCentered: true,
       margins: { left: 0.5, right: 0.5, top: 0.6, bottom: 0.7, header: 0.3, footer: 0.3 },
     },
-    headerFooter: {
-      oddFooter: `&L&8Expense report · ${escapeHF(opts.periodLabel)}&R&8Page &P of &N`,
-    },
   });
   ws.columns = widths.map((width) => ({ width }));
   return ws;
@@ -145,49 +124,6 @@ function newSheet(wb: ExcelJS.Workbook, name: string, widths: number[], opts: Ex
 /**
  * Navy title band, period line and "prepared on / scope" line. Returns the next
  * free row number (after one blank spacer row).
- */
-function writeTitleBlock(ws: ExcelJS.Worksheet, title: string, opts: ExportOptions, n: number) {
-  const last = col(n);
-
-  ws.mergeCells(`A1:${last}1`);
-  const t = ws.getRow(1);
-  t.height = 34;
-  t.getCell(1).value = title.toUpperCase();
-  paint(t, n, { font: font({ bold: true, size: 16, color: { argb: WHITE } }), fill: solid(NAVY) });
-  t.getCell(1).alignment = { vertical: "middle", indent: 1 };
-
-  ws.mergeCells(`A2:${last}2`);
-  const p = ws.getRow(2);
-  p.height = 22;
-  p.getCell(1).value = `Reporting period: ${opts.periodLabel}`;
-  paint(p, n, {
-    font: font({ bold: true, size: 11, color: { argb: NAVY } }),
-    fill: solid(BAND),
-  });
-  p.getCell(1).alignment = { vertical: "middle", indent: 1 };
-
-  ws.mergeCells(`A3:${last}3`);
-  const m = ws.getRow(3);
-  m.getCell(1).value =
-    `Scope: ${scopeText(opts)}   ·   Prepared on ${longDate(new Date())}   ·   Amounts in EUR`;
-  m.getCell(1).font = font({ size: 9, italic: true, color: { argb: MUTED } });
-  m.getCell(1).alignment = { vertical: "middle", indent: 1 };
-
-  return 5;
-}
-
-/** Blue section heading with a navy underline across the table width. */
-function writeSection(ws: ExcelJS.Worksheet, r: number, text: string, n: number) {
-  const row = ws.getRow(r);
-  row.height = 22;
-  row.getCell(1).value = text;
-  paint(row, n, {
-    font: font({ bold: true, size: 12, color: { argb: BLUE } }),
-    border: { bottom: navyMedium },
-  });
-  return r + 1;
-}
-
 /** Navy table header. Columns from `rightFrom` onward (numbers) are right-aligned. */
 function writeTableHeader(ws: ExcelJS.Worksheet, r: number, labels: string[], rightFrom: number) {
   const row = ws.getRow(r);
@@ -264,65 +200,31 @@ function groupBy(lines: Line[], key: (l: Line) => string): Group<Line>[] {
 
 /* ── Sheet 1: Summary ──────────────────────────────────────────────────── */
 
-function addSummarySheet(wb: ExcelJS.Workbook, lines: Line[], opts: ExportOptions) {
-  // Name | Transactions | Amount | % of total | Average per transaction
-  const N = 5;
-  const ws = newSheet(wb, "Summary", [38, 14, 18, 12, 20], opts);
-  let r = writeTitleBlock(ws, "Expense report", opts, N);
+function addSummarySheet(wb: ExcelJS.Workbook, lines: Line[]) {
+  // Main category / Category | Transactions | Amount | % of total
+  const N = 4;
+  const ws = newSheet(wb, "Summary", [38, 14, 18, 12]);
 
   const total = lines.reduce((s, l) => s + l.amount, 0);
-  const count = lines.length;
   const mains = groupBy(lines, (l) => l.main);
-  const largest = lines.reduce((a, b) => (b.amount > a.amount ? b : a), lines[0]);
 
-  /* Key figures — label spans A:B, value sits in the Amount column */
-  r = writeSection(ws, r, "Key figures", N);
-  const figures: [string, ExcelJS.CellValue, string][] = [
-    ["Total expenditure", total, CURRENCY],
-    ["Number of transactions", count, INTEGER],
-    ["Average per transaction", count ? total / count : 0, CURRENCY],
-    ["Largest single expense", largest?.amount ?? 0, CURRENCY],
-    [
-      "Transactions dated",
-      count
-        ? `${longDate(toExcelDate(lines[0].date))} – ${longDate(toExcelDate(lines[count - 1].date))}`
-        : "—",
-      "@",
-    ],
-  ];
-  figures.forEach(([label, value, fmt], i) => {
-    const row = ws.getRow(r);
-    ws.mergeCells(`A${r}:B${r}`);
-    ws.mergeCells(`C${r}:${col(N)}${r}`);
-    row.getCell(1).value = label;
-    row.getCell(3).value = value;
-    row.getCell(3).numFmt = fmt;
-    paint(row, N, { font: font(), border: { bottom: rule } });
-    row.getCell(1).font = font({ color: { argb: MUTED } });
-    row.getCell(3).font = font({
-      bold: true,
-      size: i === 0 ? 12 : 10,
-      color: { argb: i === 0 ? NAVY : TEXT },
-    });
-    row.getCell(3).alignment = { vertical: "middle", horizontal: "left" };
-    if (i === 0) row.height = 22;
-    r++;
-  });
-  r++;
-
-  /* Expenditure by category — main categories with their categories indented */
-  r = writeSection(ws, r, "Expenditure by category", N);
-  r = writeTableHeader(
+  let r = writeTableHeader(
     ws,
-    r,
-    ["Main category / Category", "Transactions", "Amount", "% of total", "Average per transaction"],
+    1,
+    ["Main category / Category", "Transactions", "Amount", "% of total"],
     2,
   );
-
   const firstBody = r;
   // Row count is known up front so shares can reference the total row
   const totalRow =
     firstBody + mains.reduce((s, m) => s + 1 + groupBy(m.items, (l) => l.category).length, 0);
+  const share = (row: number, amount: number) =>
+    f(`IF($C$${totalRow}=0,0,C${row}/$C$${totalRow})`, total ? amount / total : 0);
+  const numberFormats = (row: ExcelJS.Row) => {
+    row.getCell(2).numFmt = INTEGER;
+    row.getCell(3).numFmt = CURRENCY;
+    row.getCell(4).numFmt = PERCENT;
+  };
 
   for (const m of mains) {
     const cats = groupBy(m.items, (l) => l.category);
@@ -330,14 +232,15 @@ function addSummarySheet(wb: ExcelJS.Workbook, lines: Line[], opts: ExportOption
     const from = r;
     const to = r + cats.length - 1;
 
+    // SUBTOTAL, so the grand total below can skip these rows and not double count
     const mRow = ws.getRow(mr);
     mRow.values = [
       m.name,
       f(`SUBTOTAL(9,B${from}:B${to})`, m.count),
       f(`SUBTOTAL(9,C${from}:C${to})`, m.amount),
-      f(`IF($C$${totalRow}=0,0,C${mr}/$C$${totalRow})`, total ? m.amount / total : 0),
-      f(`IF(B${mr}=0,0,C${mr}/B${mr})`, m.count ? m.amount / m.count : 0),
+      share(mr, m.amount),
     ];
+    numberFormats(mRow);
     paint(mRow, N, {
       font: font({ bold: true, color: { argb: NAVY } }),
       fill: solid(BAND),
@@ -348,122 +251,36 @@ function addSummarySheet(wb: ExcelJS.Workbook, lines: Line[], opts: ExportOption
     for (const c of cats) {
       const cr = r++;
       const cRow = ws.getRow(cr);
-      cRow.values = [
-        c.name,
-        c.count,
-        c.amount,
-        f(`IF($C$${totalRow}=0,0,C${cr}/$C$${totalRow})`, total ? c.amount / total : 0),
-        f(`IF(B${cr}=0,0,C${cr}/B${cr})`, c.count ? c.amount / c.count : 0),
-      ];
+      cRow.values = [c.name, c.count, c.amount, share(cr, c.amount)];
+      numberFormats(cRow);
       paint(cRow, N, { font: font(), border: { bottom: rule } });
       cRow.getCell(1).alignment = { vertical: "middle", indent: 2 };
     }
-    [mRow, ...Array.from({ length: cats.length }, (_, i) => ws.getRow(from + i))].forEach((row) => {
-      row.getCell(2).numFmt = INTEGER;
-      row.getCell(3).numFmt = CURRENCY;
-      row.getCell(4).numFmt = PERCENT;
-      row.getCell(5).numFmt = CURRENCY;
-    });
   }
 
   const tRow = ws.getRow(totalRow);
   tRow.values = [
     "Total",
-    f(`SUBTOTAL(9,B${firstBody}:B${totalRow - 1})`, count),
+    f(`SUBTOTAL(9,B${firstBody}:B${totalRow - 1})`, lines.length),
     f(`SUBTOTAL(9,C${firstBody}:C${totalRow - 1})`, total),
     f(`IF(C${totalRow}=0,0,1)`, total ? 1 : 0),
-    f(`IF(B${totalRow}=0,0,C${totalRow}/B${totalRow})`, count ? total / count : 0),
   ];
-  tRow.getCell(2).numFmt = INTEGER;
-  tRow.getCell(3).numFmt = CURRENCY;
-  tRow.getCell(4).numFmt = PERCENT;
-  tRow.getCell(5).numFmt = CURRENCY;
+  numberFormats(tRow);
   styleTotalRow(tRow, N);
-  r = totalRow + 2;
 
-  /* Expenditure by month — only when the report spans 2+ months */
-  const months = groupBy(lines, (l) => l.date.slice(0, 7)).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
-  if (months.length >= 2) {
-    r = writeSection(ws, r, "Expenditure by month", N);
-    r = writeTableHeader(
-      ws,
-      r,
-      ["Month", "Transactions", "Amount", "% of total", "Average per transaction"],
-      2,
-    );
-    const first = r;
-    const mTotal = first + months.length;
-    months.forEach((mo, i) => {
-      const row = ws.getRow(r);
-      row.values = [
-        toExcelDate(`${mo.name}-01`),
-        mo.count,
-        mo.amount,
-        f(`IF($C$${mTotal}=0,0,C${r}/$C$${mTotal})`, total ? mo.amount / total : 0),
-        f(`IF(B${r}=0,0,C${r}/B${r})`, mo.count ? mo.amount / mo.count : 0),
-      ];
-      row.getCell(1).numFmt = MONTH;
-      row.getCell(1).alignment = { horizontal: "left" };
-      row.getCell(2).numFmt = INTEGER;
-      row.getCell(3).numFmt = CURRENCY;
-      row.getCell(4).numFmt = PERCENT;
-      row.getCell(5).numFmt = CURRENCY;
-      paint(row, N, {
-        font: font(),
-        border: { bottom: rule },
-        ...(i % 2 === 1 ? { fill: solid(ZEBRA) } : {}),
-      });
-      r++;
-    });
-    const mt = ws.getRow(mTotal);
-    mt.values = [
-      "Total",
-      f(`SUM(B${first}:B${mTotal - 1})`, count),
-      f(`SUM(C${first}:C${mTotal - 1})`, total),
-      f(`IF(C${mTotal}=0,0,1)`, total ? 1 : 0),
-      f(`IF(B${mTotal}=0,0,C${mTotal}/B${mTotal})`, count ? total / count : 0),
-    ];
-    mt.getCell(2).numFmt = INTEGER;
-    mt.getCell(3).numFmt = CURRENCY;
-    mt.getCell(4).numFmt = PERCENT;
-    mt.getCell(5).numFmt = CURRENCY;
-    styleTotalRow(mt, N);
-    r = mTotal + 2;
-  }
-
-  /* Notes */
-  r = writeSection(ws, r, "Notes", N);
-  const notes = [
-    "1.  All amounts are stated in euro (EUR) and cover every transaction within the scope shown above.",
-    "2.  “Detail by category” lists each transaction under its category with subtotals; use the outline buttons on the left to collapse it.",
-    "3.  “Transactions” lists all entries in date order. Its total follows any filter applied to the table.",
-    "4.  Reference numbers (No.) identify the same transaction on every sheet.",
-  ];
-  for (const text of notes) {
-    ws.mergeCells(`A${r}:${col(N)}${r}`);
-    const row = ws.getRow(r);
-    row.getCell(1).value = text;
-    row.getCell(1).font = font({ size: 9, color: { argb: MUTED } });
-    row.getCell(1).alignment = { vertical: "top", wrapText: true };
-    row.height = 26;
-    r++;
-  }
-
-  ws.views = [{ showGridLines: false }];
+  ws.views = [{ state: "frozen", ySplit: 1, showGridLines: false }];
 }
 
 /* ── Sheet 2: Detail by category ───────────────────────────────────────── */
 
-function addDetailSheet(wb: ExcelJS.Workbook, lines: Line[], opts: ExportOptions) {
+function addDetailSheet(wb: ExcelJS.Workbook, lines: Line[]) {
   // No. | Date | Description | Amount
   const N = 4;
-  const ws = newSheet(wb, "Detail by category", [8, 14, 62, 18], opts);
+  const ws = newSheet(wb, "Detail by category", [8, 14, 62, 18]);
   ws.properties.outlineProperties = { summaryBelow: true, summaryRight: false };
   ws.properties.outlineLevelRow = 2;
 
-  const headerRow = writeTitleBlock(ws, "Expense detail by category", opts, N);
+  const headerRow = 1;
   let r = writeTableHeader(ws, headerRow, ["No.", "Date", "Description", "Amount"], 4);
   const first = r;
 
@@ -563,13 +380,13 @@ function addDetailSheet(wb: ExcelJS.Workbook, lines: Line[], opts: ExportOptions
 
 /* ── Sheet 3: Transactions ─────────────────────────────────────────────── */
 
-function addTransactionsSheet(wb: ExcelJS.Workbook, lines: Line[], opts: ExportOptions) {
+function addTransactionsSheet(wb: ExcelJS.Workbook, lines: Line[]) {
   // No. | Date | Main category | Category | Description | Amount
   const N = 6;
-  const ws = newSheet(wb, "Transactions", [8, 14, 20, 22, 46, 16], opts);
+  const ws = newSheet(wb, "Transactions", [8, 14, 20, 22, 46, 16]);
   ws.pageSetup.orientation = "landscape";
 
-  const headerRow = writeTitleBlock(ws, "Transaction ledger", opts, N);
+  const headerRow = 1;
   const first = writeTableHeader(
     ws,
     headerRow,
@@ -621,9 +438,9 @@ export function buildWorkbook(expenses: ExpenseWithCategory[], opts: ExportOptio
   wb.calcProperties.fullCalcOnLoad = true;
 
   const lines = toLines(expenses);
-  addSummarySheet(wb, lines, opts);
-  addDetailSheet(wb, lines, opts);
-  addTransactionsSheet(wb, lines, opts);
+  addSummarySheet(wb, lines);
+  addDetailSheet(wb, lines);
+  addTransactionsSheet(wb, lines);
   return wb;
 }
 
