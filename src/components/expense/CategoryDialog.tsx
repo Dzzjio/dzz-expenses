@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -40,6 +41,7 @@ export function CategoryDialog({ open, onOpenChange, category, onCreated }: Prop
   const [name, setName] = useState("");
   const [color, setColor] = useState(randomColor());
   const [mainCategoryId, setMainCategoryId] = useState<string>("");
+  const [excludeFromExport, setExcludeFromExport] = useState(false);
   const [mcOpen, setMcOpen] = useState(false);
   const qc = useQueryClient();
 
@@ -52,6 +54,7 @@ export function CategoryDialog({ open, onOpenChange, category, onCreated }: Prop
     if (open) {
       setName(category?.name ?? "");
       setColor(category?.color ?? randomColor());
+      setExcludeFromExport(category?.exclude_from_export ?? false);
       setMainCategoryId(category?.main_category_id ?? mainCategories[0]?.id ?? "");
     }
   }, [open, category, mainCategories]);
@@ -61,7 +64,12 @@ export function CategoryDialog({ open, onOpenChange, category, onCreated }: Prop
       if (category) {
         const { data, error } = await supabase
           .from("categories")
-          .update({ name: name.trim(), color, main_category_id: mainCategoryId })
+          .update({
+            name: name.trim(),
+            color,
+            main_category_id: mainCategoryId,
+            exclude_from_export: excludeFromExport,
+          })
           .eq("id", category.id)
           .select()
           .single();
@@ -70,7 +78,12 @@ export function CategoryDialog({ open, onOpenChange, category, onCreated }: Prop
       }
       const { data, error } = await supabase
         .from("categories")
-        .insert({ name: name.trim(), color, main_category_id: mainCategoryId } as never)
+        .insert({
+          name: name.trim(),
+          color,
+          main_category_id: mainCategoryId,
+          exclude_from_export: excludeFromExport,
+        } as never)
         .select()
         .single();
       if (error) throw error;
@@ -157,6 +170,19 @@ export function CategoryDialog({ open, onOpenChange, category, onCreated }: Prop
                 />
                 <span className="text-sm text-muted-foreground">{color}</span>
               </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="cat-private">Personal — keep out of Excel</Label>
+                <p className="text-xs text-muted-foreground">
+                  Expenses in this category are skipped when exporting.
+                </p>
+              </div>
+              <Switch
+                id="cat-private"
+                checked={excludeFromExport}
+                onCheckedChange={setExcludeFromExport}
+              />
             </div>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

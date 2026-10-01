@@ -311,6 +311,10 @@ function DashboardPage() {
       toast.error(`No expenses in ${label}`);
       return;
     }
+    if (filtered.every((e) => e.category?.exclude_from_export)) {
+      toast.error(`Only personal expenses in ${label} — nothing to export`);
+      return;
+    }
     setExporting(true);
     try {
       // Loaded on demand: the spreadsheet library is big and most sessions never export

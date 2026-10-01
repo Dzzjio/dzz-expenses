@@ -427,6 +427,11 @@ function addTransactionsSheet(wb: ExcelJS.Workbook, lines: Line[]) {
   ws.pageSetup.printTitlesRow = `${headerRow}:${headerRow}`;
 }
 
+/** Expenses in categories flagged "exclude from export" (personal stuff) never reach the workbook. */
+export function exportableExpenses(expenses: ExpenseWithCategory[]) {
+  return expenses.filter((e) => !e.category?.exclude_from_export);
+}
+
 /* ── Entry point ───────────────────────────────────────────────────────── */
 
 export function buildWorkbook(expenses: ExpenseWithCategory[], opts: ExportOptions) {
@@ -437,7 +442,7 @@ export function buildWorkbook(expenses: ExpenseWithCategory[], opts: ExportOptio
   wb.created = new Date();
   wb.calcProperties.fullCalcOnLoad = true;
 
-  const lines = toLines(expenses);
+  const lines = toLines(exportableExpenses(expenses));
   addSummarySheet(wb, lines);
   addDetailSheet(wb, lines);
   addTransactionsSheet(wb, lines);
