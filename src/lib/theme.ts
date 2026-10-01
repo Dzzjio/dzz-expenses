@@ -21,6 +21,11 @@ export const THEMES = [
     name: "Medieval",
     description: "Illuminated manuscript: parchment, ink, wax and gold leaf.",
   },
+  {
+    id: "pirate",
+    name: "Pirate",
+    description: "High seas galleon: stormy oceanic depths, gold doubloons and sea spray.",
+  },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];

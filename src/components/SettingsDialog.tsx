@@ -51,6 +51,59 @@ const PREVIEWS: Record<ThemeId, React.ReactNode> = {
       <span className="h-4 w-3 bg-[oklch(0.3_0.045_45)]" />
     </div>
   ),
+  pirate: (
+    <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded border border-[oklch(0.55_0.12_72)] bg-[linear-gradient(180deg,oklch(0.23_0.035_56),oklch(0.15_0.026_52))] shadow-[inset_0_0_0_2px_oklch(0.1_0.02_55/0.6),inset_0_0_0_3px_oklch(0.8_0.15_80/0.3)]">
+      <svg viewBox="0 0 64 40" className="h-full w-full" aria-hidden="true">
+        <defs>
+          <linearGradient id="pirate-gold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#f8e08a" />
+            <stop offset=".5" stopColor="#c8962c" />
+            <stop offset="1" stopColor="#7a5014" />
+          </linearGradient>
+        </defs>
+        {[7, 17, 27, 37, 47, 57].map((x) => (
+          <g key={x}>
+            <ellipse
+              cx={x}
+              cy="4"
+              rx="3.4"
+              ry="1.9"
+              fill="none"
+              stroke="url(#pirate-gold)"
+              strokeWidth="1"
+            />
+            <ellipse
+              cx={x}
+              cy="36"
+              rx="3.4"
+              ry="1.9"
+              fill="none"
+              stroke="url(#pirate-gold)"
+              strokeWidth="1"
+            />
+          </g>
+        ))}
+        <g stroke="url(#pirate-gold)" strokeWidth="2.6" strokeLinecap="round">
+          <line x1="22" y1="12" x2="42" y2="29" />
+          <line x1="42" y1="12" x2="22" y2="29" />
+        </g>
+        <path
+          d="M32 8c-5.2 0-8.6 3.4-8.6 7.8 0 2.7 1.2 4.4 2.8 5.5V25h11.6v-3.7c1.6-1.1 2.8-2.8 2.8-5.5C40.6 11.4 37.2 8 32 8z"
+          fill="url(#pirate-gold)"
+          stroke="#2a1a06"
+          strokeWidth=".8"
+        />
+        <circle cx="28.6" cy="16.2" r="2.1" fill="#1a0f04" />
+        <circle cx="35.4" cy="16.2" r="2.1" fill="#1a0f04" />
+        <path d="M32 18.6l-1.3 3h2.6z" fill="#1a0f04" />
+        <path
+          d="M28.8 25v-2.2m2.4 2.2v-2.2m2.4 2.2v-2.2m2.4 2.2v-2.2"
+          stroke="#2a1a06"
+          strokeWidth=".7"
+        />
+      </svg>
+    </div>
+  ),
 };
 
 export function SettingsDialog({ open, onOpenChange }: Props) {

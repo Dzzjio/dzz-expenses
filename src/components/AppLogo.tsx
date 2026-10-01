@@ -7,6 +7,7 @@ const LOGOS: Record<ThemeId, string> = {
   basic: "/basic.png",
   grove: "/grov.png",
   medieval: "/med.png",
+  pirate: "/pirate.png",
 };
 
 export function AppLogo({ className }: { className?: string }) {

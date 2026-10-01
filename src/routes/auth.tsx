@@ -31,6 +31,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -65,9 +66,31 @@ function AuthPage() {
     } catch (err) {
       // supabase-js reports 5xx responses with an empty "{}" message.
       const message = (err as Error).message;
-      toast.error(message && message !== "{}" ? message : "Something went wrong. Please try again.");
+      toast.error(
+        message && message !== "{}" ? message : "Something went wrong. Please try again.",
+      );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGuest() {
+    setGuestLoading(true);
+    try {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      navigate({ to: "/", replace: true });
+    } catch (err) {
+      const message = (err as Error).message;
+      toast.error(
+        /anonymous/i.test(message)
+          ? "Guest mode isn't enabled yet. Please sign up instead."
+          : message && message !== "{}"
+            ? message
+            : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setGuestLoading(false);
     }
   }
 
@@ -125,6 +148,23 @@ function AuthPage() {
                 : "Already have an account? Sign in"}
             </button>
           </form>
+          <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            or
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleGuest}
+            disabled={guestLoading || loading}
+          >
+            {guestLoading ? "Please wait..." : "Continue as guest"}
+          </Button>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            No account needed. You can sign up later and keep your data.
+          </p>
         </CardContent>
       </Card>
     </div>
